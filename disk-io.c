@@ -49,6 +49,7 @@
 #include "raid56.h"
 #include "sysfs.h"
 #include "qgroup.h"
+#include "version.h"
 
 #ifdef CONFIG_X86
 #include <asm/cpufeature.h>
@@ -1196,7 +1197,11 @@ static struct btrfs_subvolume_writers *btrfs_alloc_subvolume_writers(void)
 	if (!writers)
 		return ERR_PTR(-ENOMEM);
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	ret = percpu_counter_init(&writers->counter, 0);
+#else
 	ret = percpu_counter_init(&writers->counter, 0, GFP_KERNEL);
+#endif
 	if (ret < 0) {
 		kfree(writers);
 		return ERR_PTR(ret);
@@ -2196,7 +2201,11 @@ int open_ctree(struct super_block *sb,
 		goto fail_srcu;
 	}
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	ret = percpu_counter_init(&fs_info->dirty_metadata_bytes, 0);
+#else
 	ret = percpu_counter_init(&fs_info->dirty_metadata_bytes, 0, GFP_KERNEL);
+#endif
 	if (ret) {
 		err = ret;
 		goto fail_bdi;
@@ -2204,13 +2213,21 @@ int open_ctree(struct super_block *sb,
 	fs_info->dirty_metadata_batch = PAGE_CACHE_SIZE *
 					(1 + ilog2(nr_cpu_ids));
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	ret = percpu_counter_init(&fs_info->delalloc_bytes, 0);
+#else
 	ret = percpu_counter_init(&fs_info->delalloc_bytes, 0, GFP_KERNEL);
+#endif
 	if (ret) {
 		err = ret;
 		goto fail_dirty_metadata_bytes;
 	}
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	ret = percpu_counter_init(&fs_info->bio_counter, 0);
+#else
 	ret = percpu_counter_init(&fs_info->bio_counter, 0, GFP_KERNEL);
+#endif
 	if (ret) {
 		err = ret;
 		goto fail_delalloc_bytes;

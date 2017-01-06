@@ -27,6 +27,13 @@ ifeq ($(shell test -d $(KERNELPATH); echo $$?),1)
 $(error Kernel path: $(KERNELPATH)  directory does not exist.)
 endif 
 
+SCRIPT="/home/px-btrfs/kernel_version.sh"
+RHEL_VERSION_CODE:=$(shell $(SCRIPT) $(KERNELPATH))
+
+ifneq ($(RHEL_VERSION_CODE), 0)
+  ccflags-y += -DRHEL_VERSION_CODE=$(RHEL_VERSION_CODE)
+endif
+
 ifeq ($(shell test  -f "/usr/bin/bc"; echo $$?),0)
 MINKVER=3.10
 KERNELVER=$(shell echo $(KVERSION) | /bin/sed 's/-.*//' | /bin/sed 's/\(.*\..*\)\..*/\1/')

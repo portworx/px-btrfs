@@ -36,6 +36,7 @@
 #include "math.h"
 #include "sysfs.h"
 #include "qgroup.h"
+#include "version.h"
 
 #undef SCRAMBLE_DELAYED_REFS
 
@@ -3491,8 +3492,11 @@ static int update_space_info(struct btrfs_fs_info *info, u64 flags,
 	found = kzalloc(sizeof(*found), GFP_NOFS);
 	if (!found)
 		return -ENOMEM;
-
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	ret = percpu_counter_init(&found->total_bytes_pinned, 0);
+#else
 	ret = percpu_counter_init(&found->total_bytes_pinned, 0, GFP_KERNEL);
+#endif
 	if (ret) {
 		kfree(found);
 		return ret;
