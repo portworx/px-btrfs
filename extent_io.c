@@ -20,6 +20,7 @@
 #include "locking.h"
 #include "rcu-string.h"
 #include "backref.h"
+#include "version.h"
 
 static struct kmem_cache *extent_state_cache;
 static struct kmem_cache *extent_buffer_cache;
@@ -3551,6 +3552,7 @@ done_unlocked:
 	return 0;
 }
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,514,0,0)
 static int eb_wait(void *word)
 {
 	io_schedule();
@@ -3562,6 +3564,12 @@ void wait_on_extent_buffer_writeback(struct extent_buffer *eb)
 	wait_on_bit(&eb->bflags, EXTENT_BUFFER_WRITEBACK, eb_wait,
 		    TASK_UNINTERRUPTIBLE);
 }
+#else
+void wait_on_extent_buffer_writeback(struct extent_buffer *eb)
+{
+	wait_on_bit(&eb->bflags, EXTENT_BUFFER_WRITEBACK, TASK_UNINTERRUPTIBLE);
+}
+#endif
 
 static noinline_for_stack int
 lock_extent_buffer_for_io(struct extent_buffer *eb,
