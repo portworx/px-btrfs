@@ -41,6 +41,7 @@
 #include "locking.h"
 #include "volumes.h"
 #include "qgroup.h"
+#include "version.h"
 
 static struct kmem_cache *btrfs_inode_defrag_cachep;
 /*
@@ -1775,7 +1776,11 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
 		goto out;
 	}
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,514,0,0) 
 	err = file_remove_suid(file);
+#else
+	err = file_update_time(file);
+#endif
 	if (err) {
 		mutex_unlock(&inode->i_mutex);
 		goto out;
