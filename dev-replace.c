@@ -37,6 +37,7 @@
 #include "rcu-string.h"
 #include "dev-replace.h"
 #include "sysfs.h"
+#include "version.h"
 
 static int btrfs_dev_replace_finishing(struct btrfs_fs_info *fs_info,
 				       int scrub_ret);
@@ -417,6 +418,9 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
 			      &dev_replace->scrub_progress, 0, 1);
 
 	ret = btrfs_dev_replace_finishing(root->fs_info, ret);
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	WARN_ON(ret);
+#else
 	/* don't warn if EINPROGRESS, someone else might be running scrub */
 	if (ret == -EINPROGRESS) {
 		args->result = BTRFS_IOCTL_DEV_REPLACE_RESULT_SCRUB_INPROGRESS;
@@ -424,6 +428,7 @@ int btrfs_dev_replace_start(struct btrfs_root *root,
 	} else {
 		WARN_ON(ret);
 	}
+#endif
 
 	return ret;
 

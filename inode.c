@@ -59,6 +59,7 @@
 #include "backref.h"
 #include "hash.h"
 #include "props.h"
+#include "version.h"
 
 struct btrfs_iget_args {
 	struct btrfs_key *location;
@@ -4601,6 +4602,12 @@ next:
 	return err;
 }
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0)
+static void wait_for_snapshot_creation(struct btrfs_root *root)
+{
+	return;
+}
+#else
 static int wait_snapshoting_atomic_t(atomic_t *a)
 {
 	schedule();
@@ -4620,6 +4627,7 @@ static void wait_for_snapshot_creation(struct btrfs_root *root)
 				 TASK_UNINTERRUPTIBLE);
 	}
 }
+#endif
 
 static int btrfs_setsize(struct inode *inode, struct iattr *attr)
 {

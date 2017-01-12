@@ -59,6 +59,7 @@
 #include "props.h"
 #include "sysfs.h"
 #include "qgroup.h"
+#include "version.h"
 
 #ifdef CONFIG_64BIT
 /* If we have a 32-bit userspace and 64-bit kernel, then the UAPI
@@ -729,8 +730,12 @@ fail:
 free:
 	kfree(pending_snapshot);
 out:
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+	atomic_dec(&root->will_be_snapshoted);
+#else
 	if (atomic_dec_and_test(&root->will_be_snapshoted))
 		wake_up_atomic_t(&root->will_be_snapshoted);
+#endif
 	return ret;
 }
 
