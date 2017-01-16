@@ -368,8 +368,12 @@ static bool btrfs_is_valid_xattr(const char *name)
 			XATTR_SECURITY_PREFIX_LEN) ||
 	       !strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) ||
 	       !strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) ||
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	       !strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) ||
-		!strncmp(name, XATTR_BTRFS_PREFIX, XATTR_BTRFS_PREFIX_LEN);
+		   !strncmp(name, XATTR_BTRFS_PREFIX, XATTR_BTRFS_PREFIX_LEN);
+#else
+	       !strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN);
+#endif
 }
 
 ssize_t btrfs_getxattr(struct dentry *dentry, const char *name,
@@ -411,9 +415,11 @@ int btrfs_setxattr(struct dentry *dentry, const char *name, const void *value,
 	if (!btrfs_is_valid_xattr(name))
 		return -EOPNOTSUPP;
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	if (!strncmp(name, XATTR_BTRFS_PREFIX, XATTR_BTRFS_PREFIX_LEN))
 		return btrfs_set_prop(dentry->d_inode, name,
 				      value, size, flags);
+#endif
 
 	if (size == 0)
 		value = "";  /* empty EA, do not remove */
@@ -444,9 +450,11 @@ int btrfs_removexattr(struct dentry *dentry, const char *name)
 	if (!btrfs_is_valid_xattr(name))
 		return -EOPNOTSUPP;
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	if (!strncmp(name, XATTR_BTRFS_PREFIX, XATTR_BTRFS_PREFIX_LEN))
 		return btrfs_set_prop(dentry->d_inode, name,
 				      NULL, 0, XATTR_REPLACE);
+#endif
 
 	return __btrfs_setxattr(NULL, dentry->d_inode, name, NULL, 0,
 				XATTR_REPLACE);

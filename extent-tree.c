@@ -440,8 +440,12 @@ next:
 			if (ret)
 				break;
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 			if (need_resched() ||
 			    rwsem_is_contended(&fs_info->commit_root_sem)) {
+#else
+			if (need_resched()) {
+#endif
 				caching_ctl->progress = last;
 				btrfs_release_path(path);
 				up_read(&fs_info->commit_root_sem);

@@ -2083,6 +2083,10 @@ error:
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+#define BTRFS_UUID_UNPARSED_SIZE        37
+#endif
+
 int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
 {
 	struct request_queue *q;
@@ -3116,6 +3120,7 @@ static int should_balance_chunk(struct btrfs_root *root,
 		return 0;
 	}
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	/*
 	 * limited by count, must be the last filter
 	 */
@@ -3125,7 +3130,7 @@ static int should_balance_chunk(struct btrfs_root *root,
 		else
 			bargs->limit--;
 	}
-
+#endif
 	return 1;
 }
 
@@ -3148,9 +3153,11 @@ static int __btrfs_balance(struct btrfs_fs_info *fs_info)
 	int ret;
 	int enospc_errors = 0;
 	bool counting = true;
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	u64 limit_data = bctl->data.limit;
 	u64 limit_meta = bctl->meta.limit;
 	u64 limit_sys = bctl->sys.limit;
+#endif
 
 	/* step one make some room on all the devices */
 	devices = &fs_info->fs_devices->devices;
@@ -3190,11 +3197,13 @@ static int __btrfs_balance(struct btrfs_fs_info *fs_info)
 	memset(&bctl->stat, 0, sizeof(bctl->stat));
 	spin_unlock(&fs_info->balance_lock);
 again:
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	if (!counting) {
 		bctl->data.limit = limit_data;
 		bctl->meta.limit = limit_meta;
 		bctl->sys.limit = limit_sys;
 	}
+#endif
 	key.objectid = BTRFS_FIRST_CHUNK_TREE_OBJECTID;
 	key.offset = (u64)-1;
 	key.type = BTRFS_CHUNK_ITEM_KEY;

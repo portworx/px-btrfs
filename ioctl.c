@@ -739,6 +739,25 @@ out:
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+/*  copy of check_sticky in fs/namei.c()
+* It's inline, so penalty for filesystems that don't use sticky bit is
+* minimal.
+*/
+static inline int check_sticky(struct inode *dir, struct inode *inode)
+{
+	kuid_t fsuid = current_fsuid();
+
+	if (!(dir->i_mode & S_ISVTX))
+		return 0;
+	if (uid_eq(inode->i_uid, fsuid))
+		return 0;
+	if (uid_eq(dir->i_uid, fsuid))
+		return 0;
+	return !capable(CAP_FOWNER);
+}
+#endif
+
 /*  copy of may_delete in fs/namei.c()
  *	Check whether we can remove a link victim from directory dir, check
  *  whether the type of victim is right.
@@ -2132,6 +2151,7 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 static noinline int btrfs_ioctl_tree_search_v2(struct file *file,
 					       void __user *argp)
 {
@@ -2170,6 +2190,7 @@ static noinline int btrfs_ioctl_tree_search_v2(struct file *file,
 
 	return ret;
 }
+#endif
 
 /*
  * Search INODE_REFs to identify path name of 'dirid' directory
@@ -2693,9 +2714,11 @@ static long btrfs_ioctl_fs_info(struct btrfs_root *root, void __user *arg)
 	}
 	mutex_unlock(&fs_devices->device_list_mutex);
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	fi_args->nodesize = root->fs_info->super_copy->nodesize;
 	fi_args->sectorsize = root->fs_info->super_copy->sectorsize;
 	fi_args->clone_alignment = root->fs_info->super_copy->sectorsize;
+#endif
 
 	if (copy_to_user(arg, fi_args, sizeof(*fi_args)))
 		ret = -EFAULT;
@@ -5040,6 +5063,7 @@ out_unlock:
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 #define INIT_FEATURE_FLAGS(suffix) \
 	{ .compat_flags = BTRFS_FEATURE_COMPAT_##suffix, \
 	  .compat_ro_flags = BTRFS_FEATURE_COMPAT_RO_##suffix, \
@@ -5199,6 +5223,7 @@ static int btrfs_ioctl_set_features(struct file *file, void __user *arg)
 
 	return btrfs_commit_transaction(trans, root);
 }
+#endif
 
 long btrfs_ioctl(struct file *file, unsigned int
 		cmd, unsigned long arg)
@@ -5257,8 +5282,10 @@ long btrfs_ioctl(struct file *file, unsigned int
 		return btrfs_ioctl_trans_end(file);
 	case BTRFS_IOC_TREE_SEARCH:
 		return btrfs_ioctl_tree_search(file, argp);
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	case BTRFS_IOC_TREE_SEARCH_V2:
 		return btrfs_ioctl_tree_search_v2(file, argp);
+#endif
 	case BTRFS_IOC_INO_LOOKUP:
 		return btrfs_ioctl_ino_lookup(file, argp);
 	case BTRFS_IOC_INO_PATHS:
@@ -5330,12 +5357,14 @@ long btrfs_ioctl(struct file *file, unsigned int
 		return btrfs_ioctl_set_fslabel(file, argp);
 	case BTRFS_IOC_FILE_EXTENT_SAME:
 		return btrfs_ioctl_file_extent_same(file, argp);
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	case BTRFS_IOC_GET_SUPPORTED_FEATURES:
 		return btrfs_ioctl_get_supported_features(file, argp);
 	case BTRFS_IOC_GET_FEATURES:
 		return btrfs_ioctl_get_features(file, argp);
 	case BTRFS_IOC_SET_FEATURES:
 		return btrfs_ioctl_set_features(file, argp);
+#endif
 	}
 
 	return -ENOTTY;

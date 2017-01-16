@@ -14,8 +14,20 @@
 #include <crypto/hash.h>
 #include <linux/err.h>
 #include "hash.h"
+#include "version.h"
 
 static struct crypto_shash *tfm;
+
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+// Copied from linux/err.h
+static inline int __must_check PTR_ERR_OR_ZERO(__force const void *ptr)
+{
+        if (IS_ERR(ptr))
+                return PTR_ERR(ptr);
+        else
+                return 0;
+}
+#endif
 
 int __init btrfs_hash_init(void)
 {

@@ -23,6 +23,7 @@
 #include "transaction.h"
 #include "xattr.h"
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 #define BTRFS_PROP_HANDLERS_HT_BITS 8
 static DEFINE_HASHTABLE(prop_handlers_ht, BTRFS_PROP_HANDLERS_HT_BITS);
 
@@ -425,3 +426,4 @@ static const char *prop_compression_extract(struct inode *inode)
 
 	return NULL;
 }
+#endif

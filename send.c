@@ -1075,7 +1075,10 @@ static int iterate_dir_item(struct btrfs_root *root, struct btrfs_path *path,
 	}
 
 out:
-	kvfree(buf);
+	if (is_vmalloc_addr(buf))
+		vfree(buf);
+	else
+		kfree(buf);
 	return ret;
 }
 

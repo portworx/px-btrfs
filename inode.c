@@ -66,7 +66,11 @@ struct btrfs_iget_args {
 	struct btrfs_root *root;
 };
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 static const struct inode_operations_wrapper btrfs_dir_inode_operations;
+#else
+static const struct inode_operations btrfs_dir_inode_operations;
+#endif
 static const struct inode_operations btrfs_symlink_inode_operations;
 static const struct inode_operations btrfs_dir_ro_inode_operations;
 static const struct inode_operations btrfs_special_inode_operations;
@@ -3619,8 +3623,12 @@ cache_acl:
 		if (root == root->fs_info->tree_root) {
 			inode->i_op = &btrfs_dir_ro_inode_operations;
 		} else {
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 			inode->i_op = &btrfs_dir_inode_operations.ops;
 			inode->i_flags |= S_IOPS_WRAPPER;
+#else
+			inode->i_op = &btrfs_dir_inode_operations;
+#endif
 		}
 		break;
 	case S_IFLNK:
@@ -4648,7 +4656,11 @@ static int btrfs_setsize(struct inode *inode, struct iattr *attr)
 		inode->i_ctime = inode->i_mtime = current_fs_time(inode->i_sb);
 
 	if (newsize > oldsize) {
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 		truncate_pagecache(inode, newsize);
+#else
+		truncate_pagecache(inode, oldsize, newsize);
+#endif
 		/*
 		 * Don't do an expanding truncate while snapshoting is ongoing.
 		 * This is to ensure the snapshot captures a fully consistent
@@ -6226,7 +6238,11 @@ static int btrfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 
 	drop_on_err = 1;
 	/* these must be set before we unlock the inode */
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	inode->i_op = &btrfs_dir_inode_operations.ops;
+#else
+	inode->i_op = &btrfs_dir_inode_operations;
+#endif
 	inode->i_fop = &btrfs_dir_file_operations;
 
 	err = btrfs_init_inode_security(trans, inode, dir, &dentry->d_name);
@@ -8533,7 +8549,11 @@ int btrfs_create_subvol_root(struct btrfs_trans_handle *trans,
 				&index);
 	if (IS_ERR(inode))
 		return PTR_ERR(inode);
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 	inode->i_op = &btrfs_dir_inode_operations.ops;
+#else
+	inode->i_op = &btrfs_dir_inode_operations;
+#endif
 	inode->i_fop = &btrfs_dir_file_operations;
 
 	set_nlink(inode, 1);
@@ -8947,6 +8967,7 @@ out_notrans:
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 static int btrfs_rename2(struct inode *old_dir, struct dentry *old_dentry,
 			 struct inode *new_dir, struct dentry *new_dentry,
 			 unsigned int flags)
@@ -8956,6 +8977,7 @@ static int btrfs_rename2(struct inode *old_dir, struct dentry *old_dentry,
 
 	return btrfs_rename(old_dir, old_dentry, new_dir, new_dentry);
 }
+#endif
 
 static void btrfs_run_delalloc_work(struct btrfs_work *work)
 {
@@ -9449,6 +9471,7 @@ int btrfs_inode_check_errors(struct inode *inode)
 	return ret;
 }
 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
 static const struct inode_operations_wrapper btrfs_dir_inode_operations = {
 	.ops = {
 	.getattr	= btrfs_getattr,
@@ -9472,6 +9495,29 @@ static const struct inode_operations_wrapper btrfs_dir_inode_operations = {
 	},
 	.rename2	= btrfs_rename2,
 };
+#else
+static const struct inode_operations btrfs_dir_inode_operations = {
+	.getattr	= btrfs_getattr,
+	.lookup		= btrfs_lookup,
+	.create		= btrfs_create,
+	.unlink		= btrfs_unlink,
+	.link		= btrfs_link,
+	.mkdir		= btrfs_mkdir,
+	.rmdir		= btrfs_rmdir,
+	.rename		= btrfs_rename,
+	.symlink	= btrfs_symlink,
+	.setattr	= btrfs_setattr,
+	.mknod		= btrfs_mknod,
+	.setxattr	= btrfs_setxattr,
+	.getxattr	= btrfs_getxattr,
+	.listxattr	= btrfs_listxattr,
+	.removexattr	= btrfs_removexattr,
+	.permission	= btrfs_permission,
+	.get_acl	= btrfs_get_acl,
+	.update_time	= btrfs_update_time,
+};
+#endif
+
 static const struct inode_operations btrfs_dir_ro_inode_operations = {
 	.lookup		= btrfs_lookup,
 	.permission	= btrfs_permission,

@@ -228,9 +228,17 @@ int btrfs_truncate_free_space_cache(struct btrfs_root *root,
 				    struct inode *inode)
 {
 	int ret = 0;
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	loff_t oldsize;
+	oldsize = i_size_read(inode);
+#endif
 
 	btrfs_i_size_write(inode, 0);
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	truncate_pagecache(inode, oldsize, 0);
+#else
 	truncate_pagecache(inode, 0);
+#endif
 
 	/*
 	 * We don't need an orphan item because truncating the free space cache
