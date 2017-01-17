@@ -59,7 +59,7 @@
 #include "backref.h"
 #include "hash.h"
 #include "props.h"
-#include "version.h"
+#include "version_compat.h"
 
 struct btrfs_iget_args {
 	struct btrfs_key *location;

@@ -59,7 +59,7 @@
 #include "props.h"
 #include "sysfs.h"
 #include "qgroup.h"
-#include "version.h"
+#include "version_compat.h"
 
 #ifdef CONFIG_64BIT
 /* If we have a 32-bit userspace and 64-bit kernel, then the UAPI

@@ -20,7 +20,7 @@
 #include "locking.h"
 #include "rcu-string.h"
 #include "backref.h"
-#include "version.h"
+#include "version_compat.h"
 
 static struct kmem_cache *extent_state_cache;
 static struct kmem_cache *extent_buffer_cache;

@@ -38,7 +38,7 @@
 #include "extent_io.h"
 #include "extent_map.h"
 #include "async-thread.h"
-#include "version.h"
+#include "version_compat.h"
 
 struct btrfs_trans_handle;
 struct btrfs_transaction;

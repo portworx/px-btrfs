@@ -49,7 +49,7 @@
 #include "raid56.h"
 #include "sysfs.h"
 #include "qgroup.h"
-#include "version.h"
+#include "version_compat.h"
 
 #ifdef CONFIG_X86
 #include <asm/cpufeature.h>

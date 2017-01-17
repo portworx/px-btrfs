@@ -36,7 +36,7 @@
 #include "math.h"
 #include "sysfs.h"
 #include "qgroup.h"
-#include "version.h"
+#include "version_compat.h"
 
 #undef SCRAMBLE_DELAYED_REFS
 

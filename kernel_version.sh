@@ -9,11 +9,6 @@ else
 	RHEL_RELEASE_MINOR=$(echo ${RHEL_RELEASE} | awk 'BEGIN {FS="."}{print $2}')
 	RHEL_RELEASE_PATCH=$(echo ${RHEL_RELEASE} | awk 'BEGIN {FS="."}{print $3}')
                                                                                 
-#echo ${RHEL_RELEASE}
-#echo ${RHEL_RELEASE_MAJOR}
-#echo ${RHEL_RELEASE_MINOR}
-#echo ${RHEL_RELEASE_PATCH}
-
 	if [ RHEL_RELEASE_MAJOR != "" ]; then
 		RHEL_VERSION_CODE=$((RHEL_RELEASE_MAJOR * 10000))
 		if [ RHEL_RELEASE_MINOR != "" ]; then

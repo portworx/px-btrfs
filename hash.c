@@ -14,7 +14,7 @@
 #include <crypto/hash.h>
 #include <linux/err.h>
 #include "hash.h"
-#include "version.h"
+#include "version_compat.h"
 
 static struct crypto_shash *tfm;
 

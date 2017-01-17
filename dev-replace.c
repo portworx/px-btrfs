@@ -37,7 +37,7 @@
 #include "rcu-string.h"
 #include "dev-replace.h"
 #include "sysfs.h"
-#include "version.h"
+#include "version_compat.h"
 
 static int btrfs_dev_replace_finishing(struct btrfs_fs_info *fs_info,
 				       int scrub_ret);
