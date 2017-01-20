@@ -16,15 +16,20 @@
 
 using namespace std::placeholders;
 
-class PXBtrfs : public ::testing::Test {
+class PXBtrfsTest : public ::testing::Test {
+private:
+	const uint64_t size_ = 10 * 1024 * 1024 * 1024UL;
+	const char *btrfs_fs = "/var/tmp/btrfs";
+	const char *btrfs_mount = "/var/tmp/btrfs_mount/";
+
 protected:
 	int fd;		// control file descriptor
 	std::set<uint64_t> added_ids;
 	const size_t write_len = 4096;
 	std::atomic<uint64_t> wr_thr_cnt;
 
-	PXBtrfs() : fd(-1), wr_thr_cnt(0) {}
-	virtual ~PXBtrfs() {
+	PXBtrfsTest() : fd(-1), wr_thr_cnt(0) {}
+	virtual ~PXBtrfsTest() {
 		if (fd >= 0)
 			close(fd);
 	}
@@ -37,14 +42,36 @@ public:
 	void read_thread(const char *name);
 };
 
-void PXBtrfs::SetUp()
+void PXBtrfsTest::SetUp()
 {
+	struct stat st;
+	char cmd[256];
+
 	seteuid(0);
 	ASSERT_EQ(0, system("/usr/bin/sudo /usr/sbin/insmod btrfs.ko"));
+
+	sprintf(cmd, "umount %s", btrfs_mount);
+	if (system(cmd)) {}
+	sprintf(cmd, "rm -rf %s", btrfs_mount);
+	if (system(cmd)) {}
+
+	ASSERT_EQ(-1, stat(btrfs_mount, &st));
+	ASSERT_EQ(errno, ENOENT);
+	ASSERT_EQ(0, mkdir(btrfs_mount, 0777));
+
+	int fd = ::open(btrfs_fs, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+	ASSERT_TRUE(fd >= 0);
+	ASSERT_EQ(0, ftruncate(fd, size_));
+	sprintf(cmd, "mkfs.btrfs %s", btrfs_fs);
+	ASSERT_EQ(0, system(cmd));
+
+	sprintf(cmd, "mount %s %s", btrfs_fs, btrfs_mount);
+	ASSERT_EQ(0, system(cmd));
 }
 
-void PXBtrfs::TearDown()
+void PXBtrfsTest::TearDown()
 {
+	char cmd[256];
 	sleep(1);
 
 	if (fd >= 0) {
@@ -52,6 +79,8 @@ void PXBtrfs::TearDown()
 		fd = -1;
 	}
 
+	sprintf(cmd, "mount %s %s", btrfs_mount);
+	ASSERT_EQ(0, system(cmd));
 	ASSERT_EQ(0, system("/usr/bin/sudo /usr/sbin/rmmod btrfs.ko"));
 }
 
@@ -63,8 +92,16 @@ static std::vector<uint64_t> make_pattern(size_t size)
 	return v;
 }
 
-void PXBtrfs::write_thread(const char *name)
+void PXBtrfsTest::write_thread(const char *name)
 {
+
+	char file[256];
+	sprintf(file, "%s/f.%s", btrfs_mount, name);
+	fprintf(stderr, "Openginfile .......%s\n",file);
+	int fd = open(file, O_CREAT|O_RDWR|O_DIRECT|O_SYNC);
+	if (fd < 0) {
+		perror("write_thread");
+	}
 	for (int i = 0; i < 1000000; i++) {
 		off_t offset = rand() % (512 * 1024);
 		size_t sz = rand() % (16 * 1024);
@@ -74,8 +111,6 @@ void PXBtrfs::write_thread(const char *name)
 		}
 
 		std::vector<uint64_t> v(make_pattern(sz));
-		int fd = -1;
-
 		offset = 8192 + (offset & ~4095);
 
 		fprintf(stderr, "\n\n\nITTR %d Starting IO at offset %lu with size %lu\n", i, offset, sz);
@@ -110,20 +145,13 @@ void PXBtrfs::write_thread(const char *name)
 	wr_thr_cnt++;
 }
 
-TEST_F(PXBtrfs, read_write)
+TEST_F(PXBtrfsTest, read_write)
 {
-	std::string name;
 	char msg_buf[write_len * 8 * 2];
 
-	std::thread writer1(&PXBtrfs::write_thread, this, name.c_str());
-	std::thread writer2(&PXBtrfs::write_thread, this, name.c_str());
+	std::thread writer1(&PXBtrfsTest::write_thread, this, "writer1");
+	std::thread writer2(&PXBtrfsTest::write_thread, this, "writer2");
 
-	while (1) {
-		ssize_t write_bytes = write(fd, msg_buf, 4096);
-		ASSERT_EQ(4096, write_bytes);
-	}
-
-done:
 	writer1.join();
 	writer2.join();
 }
