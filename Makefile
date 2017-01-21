@@ -27,8 +27,10 @@ ifeq ($(shell test -d $(KERNELPATH); echo $$?),1)
 $(error Kernel path: $(KERNELPATH)  directory does not exist.)
 endif 
 
-SCRIPT="/home/px-btrfs/kernel_version.sh"
-RHEL_VERSION_CODE:=$(shell $(SCRIPT) $(KERNELPATH))
+ifndef RHEL_VERSION_CODE
+	SCRIPT:=$(shell pwd)"/kernel_version.sh"
+	RHEL_VERSION_CODE:=$(shell $(SCRIPT) $(KERNELPATH))
+endif
 
 ifneq ($(RHEL_VERSION_CODE), 0)
   ccflags-y += -DRHEL_VERSION_CODE=$(RHEL_VERSION_CODE)
@@ -53,7 +55,7 @@ export OUTPATH
 .PHONY: rpm
 
 all: 
-	make -C $(KERNELPATH) M=$(CURDIR) modules
+	make -C $(KERNELPATH) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE)  M=$(CURDIR) modules
 
 insert: all
 	insmod btrfs.ko	
