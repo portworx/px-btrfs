@@ -59,10 +59,18 @@
 #include "free-space-cache.h"
 #include "backref.h"
 #include "tests/btrfs-tests.h"
+#include "version_compat.h"
+
+#if BTRFS_RHEL_VERSION_CODE >= BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
+#include <linux/btrfs_tree.h>
+#endif
 
 #include "qgroup.h"
-#define CREATE_TRACE_POINTS
+// #define CREATE_TRACE_POINTS
+
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 #include <trace/events/btrfs.h>
+#endif
 
 static const struct super_operations btrfs_super_ops;
 static struct file_system_type btrfs_fs_type;
@@ -988,7 +996,7 @@ int btrfs_sync_fs(struct super_block *sb, int wait)
 	struct btrfs_fs_info *fs_info = btrfs_sb(sb);
 	struct btrfs_root *root = fs_info->tree_root;
 
-	trace_btrfs_sync_fs(wait);
+	//trace_btrfs_sync_fs(wait);
 
 	if (!wait) {
 		filemap_flush(fs_info->btree_inode->i_mapping);
@@ -1269,7 +1277,7 @@ static int setup_security_options(struct btrfs_fs_info *fs_info,
 	 * Call security_sb_set_mnt_opts() to check whether new sec_opts
 	 * is valid.
 	 */
-	ret = security_sb_set_mnt_opts(sb, sec_opts, 0, NULL);
+	//ret = security_sb_set_mnt_opts(sb, sec_opts, 0, NULL);
 	if (ret)
 		return ret;
 

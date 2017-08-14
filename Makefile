@@ -21,11 +21,15 @@ btrfs-$(CONFIG_BTRFS_FS_RUN_SANITY_TESTS) += tests/free-space-tests.o \
 KVERSION=$(shell uname -r)
 ifndef KERNELPATH
      KERNELPATH=/usr/src/kernels/$(KVERSION)
-endif 
+endif
 
 ifeq ($(shell test -d $(KERNELPATH); echo $$?),1)
 $(error Kernel path: $(KERNELPATH)  directory does not exist.)
-endif 
+endif
+
+ifdef KERNELOTHER
+KERNELOTHEROPT=O=$(KERNELOTHER)
+endif
 
 ifndef RHEL_VERSION_CODE
 	SCRIPT:=$(shell pwd)"/kernel_version.sh"
@@ -41,8 +45,8 @@ MINKVER=3.10
 KERNELVER=$(shell echo $(KVERSION) | /bin/sed 's/-.*//' | /bin/sed 's/\(.*\..*\)\..*/\1/')
 ifeq ($(shell echo "$(KERNELVER)>=$(MINKVER)" | /usr/bin/bc),0)
 $(error Kernel version error: Build kernel version must be >= $(MINKVER).)
-endif 
-endif 
+endif
+endif
 
 MAJOR=$(shell echo $(KVERSION) | awk -F. '{print $$1}')
 MINOR=$(shell echo $(KVERSION) | awk -F. '{print $$2}')
@@ -54,17 +58,17 @@ export OUTPATH
 
 .PHONY: rpm
 
-all: 
-	make -C $(KERNELPATH) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE)  M=$(CURDIR) modules
+all:
+	make -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) modules
 
 insert: all
-	insmod btrfs.ko	
-	
+	insmod btrfs.ko
+
 clean:
-	make -C $(KERNELPATH) M=$(CURDIR) clean
+	make -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) clean
 
 install:
-	make V=1 -C $(KERNELPATH) M=$(CURDIR) modules_install 
-	
+	make V=1 -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) modules_install
+
 distclean: clean
 	@/bin/rm -f  config.* Makefile

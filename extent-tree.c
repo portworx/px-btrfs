@@ -2077,7 +2077,7 @@ static int run_delayed_data_ref(struct btrfs_trans_handle *trans,
 	ins.type = BTRFS_EXTENT_ITEM_KEY;
 
 	ref = btrfs_delayed_node_to_data_ref(node);
-	trace_run_delayed_data_ref(node, ref, node->action);
+	//trace_run_delayed_data_ref(node, ref, node->action);
 
 	if (node->type == BTRFS_SHARED_DATA_REF_KEY)
 		parent = ref->parent;
@@ -2234,7 +2234,7 @@ static int run_delayed_tree_ref(struct btrfs_trans_handle *trans,
 						 SKINNY_METADATA);
 
 	ref = btrfs_delayed_node_to_tree_ref(node);
-	trace_run_delayed_tree_ref(node, ref, node->action);
+	//trace_run_delayed_tree_ref(node, ref, node->action);
 
 	if (node->type == BTRFS_SHARED_BLOCK_REF_KEY)
 		parent = ref->parent;
@@ -2300,7 +2300,7 @@ static int run_one_delayed_ref(struct btrfs_trans_handle *trans,
 		 */
 		BUG_ON(extent_op);
 		head = btrfs_delayed_node_to_head(node);
-		trace_run_delayed_ref_head(node, head, node->action);
+		//trace_run_delayed_ref_head(node, head, node->action);
 
 		if (insert_reserved) {
 			btrfs_pin_extent(root, node->bytenr,
@@ -3777,14 +3777,14 @@ commit_trans:
 			goto again;
 		}
 
-		trace_btrfs_space_reservation(root->fs_info,
-					      "space_info:enospc",
-					      data_sinfo->flags, bytes, 1);
+		//trace_btrfs_space_reservation(root->fs_info,
+		//			      "space_info:enospc",
+		//			      data_sinfo->flags, bytes, 1);
 		return -ENOSPC;
 	}
 	data_sinfo->bytes_may_use += bytes;
-	trace_btrfs_space_reservation(root->fs_info, "space_info",
-				      data_sinfo->flags, bytes, 1);
+	//trace_btrfs_space_reservation(root->fs_info, "space_info",
+	//			      data_sinfo->flags, bytes, 1);
 	spin_unlock(&data_sinfo->lock);
 
 	return 0;
@@ -3805,8 +3805,8 @@ void btrfs_free_reserved_data_space(struct inode *inode, u64 bytes)
 	spin_lock(&data_sinfo->lock);
 	WARN_ON(data_sinfo->bytes_may_use < bytes);
 	data_sinfo->bytes_may_use -= bytes;
-	trace_btrfs_space_reservation(root->fs_info, "space_info",
-				      data_sinfo->flags, bytes, 0);
+	//trace_btrfs_space_reservation(root->fs_info, "space_info",
+	//			      data_sinfo->flags, bytes, 0);
 	spin_unlock(&data_sinfo->lock);
 }
 
@@ -4478,8 +4478,8 @@ again:
 	if (used <= space_info->total_bytes) {
 		if (used + orig_bytes <= space_info->total_bytes) {
 			space_info->bytes_may_use += orig_bytes;
-			trace_btrfs_space_reservation(root->fs_info,
-				"space_info", space_info->flags, orig_bytes, 1);
+			//trace_btrfs_space_reservation(root->fs_info,
+			//	"space_info", space_info->flags, orig_bytes, 1);
 			ret = 0;
 		} else {
 			/*
@@ -4501,9 +4501,9 @@ again:
 
 	if (ret && can_overcommit(root, space_info, orig_bytes, flush)) {
 		space_info->bytes_may_use += orig_bytes;
-		trace_btrfs_space_reservation(root->fs_info, "space_info",
-					      space_info->flags, orig_bytes,
-					      1);
+		//trace_btrfs_space_reservation(root->fs_info, "space_info",
+		//			      space_info->flags, orig_bytes,
+		//			      1);
 		ret = 0;
 	}
 
@@ -4569,9 +4569,9 @@ out:
 			ret = 0;
 	}
 	if (ret == -ENOSPC)
-		trace_btrfs_space_reservation(root->fs_info,
-					      "space_info:enospc",
-					      space_info->flags, orig_bytes, 1);
+	  //trace_btrfs_space_reservation(root->fs_info,
+	  //			      "space_info:enospc",
+	  //				      space_info->flags, orig_bytes, 1);
 	if (flushing) {
 		spin_lock(&space_info->lock);
 		space_info->flush = 0;
@@ -4694,8 +4694,8 @@ static void block_rsv_release_bytes(struct btrfs_fs_info *fs_info,
 		if (num_bytes) {
 			spin_lock(&space_info->lock);
 			space_info->bytes_may_use -= num_bytes;
-			trace_btrfs_space_reservation(fs_info, "space_info",
-					space_info->flags, num_bytes, 0);
+			//trace_btrfs_space_reservation(fs_info, "space_info",
+			//		space_info->flags, num_bytes, 0);
 			spin_unlock(&space_info->lock);
 		}
 	}
@@ -4887,15 +4887,15 @@ static void update_global_block_rsv(struct btrfs_fs_info *fs_info)
 		num_bytes = sinfo->total_bytes - num_bytes;
 		block_rsv->reserved += num_bytes;
 		sinfo->bytes_may_use += num_bytes;
-		trace_btrfs_space_reservation(fs_info, "space_info",
-				      sinfo->flags, num_bytes, 1);
+		//trace_btrfs_space_reservation(fs_info, "space_info",
+		//		      sinfo->flags, num_bytes, 1);
 	}
 
 	if (block_rsv->reserved >= block_rsv->size) {
 		num_bytes = block_rsv->reserved - block_rsv->size;
 		sinfo->bytes_may_use -= num_bytes;
-		trace_btrfs_space_reservation(fs_info, "space_info",
-				      sinfo->flags, num_bytes, 0);
+		//trace_btrfs_space_reservation(fs_info, "space_info",
+		//		      sinfo->flags, num_bytes, 0);
 		block_rsv->reserved = block_rsv->size;
 		block_rsv->full = 1;
 	}
@@ -4952,8 +4952,8 @@ void btrfs_trans_release_metadata(struct btrfs_trans_handle *trans,
 	if (!trans->bytes_reserved)
 		return;
 
-	trace_btrfs_space_reservation(root->fs_info, "transaction",
-				      trans->transid, trans->bytes_reserved, 0);
+	//trace_btrfs_space_reservation(root->fs_info, "transaction",
+	//			      trans->transid, trans->bytes_reserved, 0);
 	btrfs_block_rsv_release(root, trans->block_rsv, trans->bytes_reserved);
 	trans->bytes_reserved = 0;
 }
@@ -4972,8 +4972,8 @@ int btrfs_orphan_reserve_metadata(struct btrfs_trans_handle *trans,
 	 * when we are truly done with the orphan item.
 	 */
 	u64 num_bytes = btrfs_calc_trans_metadata_size(root, 1);
-	trace_btrfs_space_reservation(root->fs_info, "orphan",
-				      btrfs_ino(inode), num_bytes, 1);
+	//trace_btrfs_space_reservation(root->fs_info, "orphan",
+	//			      btrfs_ino(inode), num_bytes, 1);
 	return block_rsv_migrate_bytes(src_rsv, dst_rsv, num_bytes);
 }
 
@@ -4981,8 +4981,8 @@ void btrfs_orphan_release_metadata(struct inode *inode)
 {
 	struct btrfs_root *root = BTRFS_I(inode)->root;
 	u64 num_bytes = btrfs_calc_trans_metadata_size(root, 1);
-	trace_btrfs_space_reservation(root->fs_info, "orphan",
-				      btrfs_ino(inode), num_bytes, 0);
+	//trace_btrfs_space_reservation(root->fs_info, "orphan",
+	//			      btrfs_ino(inode), num_bytes, 0);
 	btrfs_block_rsv_release(root, root->orphan_block_rsv, num_bytes);
 }
 
@@ -5225,9 +5225,9 @@ int btrfs_delalloc_reserve_metadata(struct inode *inode, u64 num_bytes)
 	if (delalloc_lock)
 		mutex_unlock(&BTRFS_I(inode)->delalloc_mutex);
 
-	if (to_reserve)
-		trace_btrfs_space_reservation(root->fs_info, "delalloc",
-					      btrfs_ino(inode), to_reserve, 1);
+	//if (to_reserve)
+	//	trace_btrfs_space_reservation(root->fs_info, "delalloc",
+	//				      btrfs_ino(inode), to_reserve, 1);
 	block_rsv_add_bytes(block_rsv, to_reserve, 1);
 
 	return 0;
@@ -5288,8 +5288,8 @@ out_fail:
 
 	if (to_free) {
 		btrfs_block_rsv_release(root, block_rsv, to_free);
-		trace_btrfs_space_reservation(root->fs_info, "delalloc",
-					      btrfs_ino(inode), to_free, 0);
+		//trace_btrfs_space_reservation(root->fs_info, "delalloc",
+		//			      btrfs_ino(inode), to_free, 0);
 	}
 	if (delalloc_lock)
 		mutex_unlock(&BTRFS_I(inode)->delalloc_mutex);
@@ -5321,8 +5321,8 @@ void btrfs_delalloc_release_metadata(struct inode *inode, u64 num_bytes)
 	if (dropped > 0)
 		to_free += btrfs_calc_trans_metadata_size(root, dropped);
 
-	trace_btrfs_space_reservation(root->fs_info, "delalloc",
-				      btrfs_ino(inode), to_free, 0);
+	//trace_btrfs_space_reservation(root->fs_info, "delalloc",
+	//			      btrfs_ino(inode), to_free, 0);
 	if (root->fs_info->quota_enabled) {
 		btrfs_qgroup_free(root, num_bytes +
 					dropped * root->nodesize);
@@ -5517,8 +5517,8 @@ static int pin_down_extent(struct btrfs_root *root,
 
 	set_extent_dirty(root->fs_info->pinned_extents, bytenr,
 			 bytenr + num_bytes - 1, GFP_NOFS | __GFP_NOFAIL);
-	if (reserved)
-		trace_btrfs_reserved_extent_free(root, bytenr, num_bytes);
+	//if (reserved)
+	//	trace_btrfs_reserved_extent_free(root, bytenr, num_bytes);
 	return 0;
 }
 
@@ -5680,9 +5680,9 @@ static int btrfs_update_reserved_bytes(struct btrfs_block_group_cache *cache,
 			cache->reserved += num_bytes;
 			space_info->bytes_reserved += num_bytes;
 			if (reserve == RESERVE_ALLOC) {
-				trace_btrfs_space_reservation(cache->fs_info,
-						"space_info", space_info->flags,
-						num_bytes, 0);
+			  //trace_btrfs_space_reservation(cache->fs_info,
+			  //		"space_info", space_info->flags,
+			  //			num_bytes, 0);
 				space_info->bytes_may_use -= num_bytes;
 			}
 
@@ -6247,7 +6247,7 @@ void btrfs_free_tree_block(struct btrfs_trans_handle *trans,
 
 		btrfs_add_free_space(cache, buf->start, buf->len);
 		btrfs_update_reserved_bytes(cache, buf->len, RESERVE_FREE, 0);
-		trace_btrfs_reserved_extent_free(root, buf->start, buf->len);
+		//trace_btrfs_reserved_extent_free(root, buf->start, buf->len);
 		pin = 0;
 	}
 out:
@@ -6498,7 +6498,7 @@ static noinline int find_free_extent(struct btrfs_root *orig_root,
 	ins->objectid = 0;
 	ins->offset = 0;
 
-	trace_find_free_extent(orig_root, num_bytes, empty_size, flags);
+	//trace_find_free_extent(orig_root, num_bytes, empty_size, flags);
 
 	space_info = __find_space_info(root->fs_info, flags);
 	if (!space_info) {
@@ -6644,9 +6644,9 @@ have_block_group:
 			if (offset) {
 				/* we have a block, we're done */
 				spin_unlock(&last_ptr->refill_lock);
-				trace_btrfs_reserve_extent_cluster(root,
-						used_block_group,
-						search_start, num_bytes);
+				//trace_btrfs_reserve_extent_cluster(root,
+				//		used_block_group,
+				//		search_start, num_bytes);
 				if (used_block_group != block_group) {
 					btrfs_release_block_group(block_group,
 								  delalloc);
@@ -6717,9 +6717,9 @@ refill_cluster:
 				if (offset) {
 					/* we found one, proceed */
 					spin_unlock(&last_ptr->refill_lock);
-					trace_btrfs_reserve_extent_cluster(root,
-						block_group, search_start,
-						num_bytes);
+					//trace_btrfs_reserve_extent_cluster(root,
+					//	block_group, search_start,
+					//	num_bytes);
 					goto checks;
 				}
 			} else if (!cached && loop > LOOP_CACHING_NOWAIT
@@ -6806,8 +6806,8 @@ checks:
 		ins->objectid = search_start;
 		ins->offset = num_bytes;
 
-		trace_btrfs_reserve_extent(orig_root, block_group,
-					   search_start, num_bytes);
+		//trace_btrfs_reserve_extent(orig_root, block_group,
+		//			   search_start, num_bytes);
 		btrfs_release_block_group(block_group, delalloc);
 		break;
 loop:
@@ -6986,7 +6986,7 @@ static int __btrfs_free_reserved_extent(struct btrfs_root *root,
 	}
 	btrfs_put_block_group(cache);
 
-	trace_btrfs_reserved_extent_free(root, start, len);
+	//trace_btrfs_reserved_extent_free(root, start, len);
 
 	return ret;
 }
@@ -7077,7 +7077,7 @@ static int alloc_reserved_file_extent(struct btrfs_trans_handle *trans,
 			ins->objectid, ins->offset);
 		BUG();
 	}
-	trace_btrfs_reserved_extent_alloc(root, ins->objectid, ins->offset);
+	//trace_btrfs_reserved_extent_alloc(root, ins->objectid, ins->offset);
 	return ret;
 }
 
@@ -7167,7 +7167,7 @@ static int alloc_reserved_tree_block(struct btrfs_trans_handle *trans,
 		BUG();
 	}
 
-	trace_btrfs_reserved_extent_alloc(root, ins->objectid, root->nodesize);
+	//trace_btrfs_reserved_extent_alloc(root, ins->objectid, root->nodesize);
 	return ret;
 }
 

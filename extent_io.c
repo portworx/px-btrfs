@@ -219,7 +219,7 @@ static struct extent_state *alloc_extent_state(gfp_t mask)
 	btrfs_leak_debug_add(&state->leak_list, &states);
 	atomic_set(&state->refs, 1);
 	init_waitqueue_head(&state->wq);
-	trace_alloc_extent_state(state, mask, _RET_IP_);
+	//trace_alloc_extent_state(state, mask, _RET_IP_);
 	return state;
 }
 
@@ -230,7 +230,7 @@ void free_extent_state(struct extent_state *state)
 	if (atomic_dec_and_test(&state->refs)) {
 		WARN_ON(extent_state_in_tree(state));
 		btrfs_leak_debug_del(&state->leak_list);
-		trace_free_extent_state(state, _RET_IP_);
+		//trace_free_extent_state(state, _RET_IP_);
 		kmem_cache_free(extent_state_cache, state);
 	}
 }
@@ -3496,7 +3496,7 @@ static int __extent_writepage(struct page *page, struct writeback_control *wbc,
 	else
 		write_flags = WRITE;
 
-	trace___extent_writepage(page, inode, wbc);
+	//trace___extent_writepage(page, inode, wbc);
 
 	WARN_ON(!PageLocked(page));
 

@@ -557,9 +557,9 @@ static int btrfs_delayed_item_reserve_metadata(struct btrfs_trans_handle *trans,
 	num_bytes = btrfs_calc_trans_metadata_size(root, 1);
 	ret = btrfs_block_rsv_migrate(src_rsv, dst_rsv, num_bytes);
 	if (!ret) {
-		trace_btrfs_space_reservation(root->fs_info, "delayed_item",
-					      item->key.objectid,
-					      num_bytes, 1);
+	  //trace_btrfs_space_reservation(root->fs_info, "delayed_item",
+	  //			      item->key.objectid,
+	  //				      num_bytes, 1);
 		item->bytes_reserved = num_bytes;
 	}
 
@@ -575,9 +575,9 @@ static void btrfs_delayed_item_release_metadata(struct btrfs_root *root,
 		return;
 
 	rsv = &root->fs_info->delayed_block_rsv;
-	trace_btrfs_space_reservation(root->fs_info, "delayed_item",
-				      item->key.objectid, item->bytes_reserved,
-				      0);
+	//trace_btrfs_space_reservation(root->fs_info, "delayed_item",
+	//			      item->key.objectid, item->bytes_reserved,
+	//			      0);
 	btrfs_block_rsv_release(root, rsv,
 				item->bytes_reserved);
 }
@@ -622,10 +622,10 @@ static int btrfs_delayed_inode_reserve_metadata(
 			ret = -ENOSPC;
 		if (!ret) {
 			node->bytes_reserved = num_bytes;
-			trace_btrfs_space_reservation(root->fs_info,
-						      "delayed_inode",
-						      btrfs_ino(inode),
-						      num_bytes, 1);
+			//trace_btrfs_space_reservation(root->fs_info,
+			//			      "delayed_inode",
+			//			      btrfs_ino(inode),
+			//			      num_bytes, 1);
 		}
 		return ret;
 	} else if (src_rsv->type == BTRFS_BLOCK_RSV_DELALLOC) {
@@ -682,14 +682,14 @@ out:
 	 * how block rsvs. work.
 	 */
 	if (!ret) {
-		trace_btrfs_space_reservation(root->fs_info, "delayed_inode",
-					      btrfs_ino(inode), num_bytes, 1);
+	  //trace_btrfs_space_reservation(root->fs_info, "delayed_inode",
+	  //				      btrfs_ino(inode), num_bytes, 1);
 		node->bytes_reserved = num_bytes;
 	}
 
 	if (release) {
-		trace_btrfs_space_reservation(root->fs_info, "delalloc",
-					      btrfs_ino(inode), num_bytes, 0);
+	  //trace_btrfs_space_reservation(root->fs_info, "delalloc",
+	  //btrfs_ino(inode), num_bytes, 0);
 		btrfs_block_rsv_release(root, src_rsv, num_bytes);
 	}
 
@@ -705,8 +705,8 @@ static void btrfs_delayed_inode_release_metadata(struct btrfs_root *root,
 		return;
 
 	rsv = &root->fs_info->delayed_block_rsv;
-	trace_btrfs_space_reservation(root->fs_info, "delayed_inode",
-				      node->inode_id, node->bytes_reserved, 0);
+	//trace_btrfs_space_reservation(root->fs_info, "delayed_inode",
+	//			      node->inode_id, node->bytes_reserved, 0);
 	btrfs_block_rsv_release(root, rsv,
 				node->bytes_reserved);
 	node->bytes_reserved = 0;

@@ -609,7 +609,7 @@ add_delayed_ref_head(struct btrfs_fs_info *fs_info,
 	spin_lock_init(&head_ref->lock);
 	mutex_init(&head_ref->mutex);
 
-	trace_add_delayed_ref_head(ref, head_ref, action);
+	//trace_add_delayed_ref_head(ref, head_ref, action);
 
 	existing = htree_insert(&delayed_refs->href_root,
 				&head_ref->href_node);
@@ -673,7 +673,7 @@ add_delayed_tree_ref(struct btrfs_fs_info *fs_info,
 		ref->type = BTRFS_TREE_BLOCK_REF_KEY;
 	full_ref->level = level;
 
-	trace_add_delayed_tree_ref(ref, full_ref, action);
+	//trace_add_delayed_tree_ref(ref, full_ref, action);
 
 	spin_lock(&head_ref->lock);
 	existing = tree_insert(&head_ref->ref_root, &ref->rb_node);
@@ -738,7 +738,7 @@ add_delayed_data_ref(struct btrfs_fs_info *fs_info,
 	full_ref->objectid = owner;
 	full_ref->offset = offset;
 
-	trace_add_delayed_data_ref(ref, full_ref, action);
+	//trace_add_delayed_data_ref(ref, full_ref, action);
 
 	spin_lock(&head_ref->lock);
 	existing = tree_insert(&head_ref->ref_root, &ref->rb_node);

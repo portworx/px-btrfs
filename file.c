@@ -1902,7 +1902,7 @@ int btrfs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
 	int ret = 0;
 	bool full_sync = 0;
 
-	trace_btrfs_sync_file(file, datasync);
+	//trace_btrfs_sync_file(file, datasync);
 
 	/*
 	 * We write the dirty pages in the range and wait until they complete

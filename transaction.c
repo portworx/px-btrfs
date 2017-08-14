@@ -527,8 +527,8 @@ again:
 	}
 
 	if (num_bytes) {
-		trace_btrfs_space_reservation(root->fs_info, "transaction",
-					      h->transid, num_bytes, 1);
+	  //trace_btrfs_space_reservation(root->fs_info, "transaction",
+	  //				      h->transid, num_bytes, 1);
 		h->block_rsv = &root->fs_info->trans_block_rsv;
 		h->bytes_reserved = num_bytes;
 		h->reloc_reserved = reloc_reserved;
@@ -1701,7 +1701,7 @@ static void cleanup_transaction(struct btrfs_trans_handle *trans,
 	btrfs_put_transaction(cur_trans);
 	btrfs_put_transaction(cur_trans);
 
-	trace_btrfs_transaction_commit(root);
+	//trace_btrfs_transaction_commit(root);
 
 	if (current->journal_info == trans)
 		current->journal_info = NULL;
@@ -2044,7 +2044,7 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans,
 	if (trans->type & __TRANS_FREEZABLE)
 		sb_end_intwrite(root->fs_info->sb);
 
-	trace_btrfs_transaction_commit(root);
+	//trace_btrfs_transaction_commit(root);
 
 	btrfs_scrub_continue(root);
 

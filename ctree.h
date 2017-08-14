@@ -40,6 +40,10 @@
 #include "async-thread.h"
 #include "version_compat.h"
 
+#if BTRFS_RHEL_VERSION_CODE >= BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0)
+#include <linux/btrfs_tree.h>
+#endif
+
 struct btrfs_trans_handle;
 struct btrfs_transaction;
 struct btrfs_pending_snapshot;
@@ -216,6 +220,7 @@ static int btrfs_csum_sizes[] = { 4, 0 };
  * in cpu native order.  Otherwise they are identical and their sizes
  * should be the same (ie both packed)
  */
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 struct btrfs_disk_key {
 	__le64 objectid;
 	u8 type;
@@ -227,10 +232,6 @@ struct btrfs_key {
 	u8 type;
 	u64 offset;
 } __attribute__ ((__packed__));
-
-struct btrfs_mapping_tree {
-	struct extent_map_tree map_tree;
-};
 
 struct btrfs_dev_item {
 	/* the internal btrfs device id */
@@ -315,9 +316,6 @@ struct btrfs_chunk {
 	/* additional stripes go here */
 } __attribute__ ((__packed__));
 
-#define BTRFS_FREE_SPACE_EXTENT	1
-#define BTRFS_FREE_SPACE_BITMAP	2
-
 struct btrfs_free_space_entry {
 	__le64 offset;
 	__le64 bytes;
@@ -330,6 +328,15 @@ struct btrfs_free_space_header {
 	__le64 num_entries;
 	__le64 num_bitmaps;
 } __attribute__ ((__packed__));
+
+#endif
+
+#define BTRFS_FREE_SPACE_EXTENT	1
+#define BTRFS_FREE_SPACE_BITMAP	2
+
+struct btrfs_mapping_tree {
+	struct extent_map_tree map_tree;
+};
 
 static inline unsigned long btrfs_chunk_item_size(int num_stripes)
 {
@@ -611,6 +618,7 @@ struct btrfs_path {
 	unsigned int skip_release_on_error:1;
 };
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 /*
  * items in the extent btree are used to record the objectid of the
  * owner of the block and the number of references
@@ -625,6 +633,7 @@ struct btrfs_extent_item {
 struct btrfs_extent_item_v0 {
 	__le32 refs;
 } __attribute__ ((__packed__));
+#endif
 
 #define BTRFS_MAX_EXTENT_ITEM_SIZE(r) ((BTRFS_LEAF_DATA_SIZE(r) >> 4) - \
 					sizeof(struct btrfs_item))
@@ -643,6 +652,7 @@ struct btrfs_extent_item_v0 {
  */
 #define BTRFS_EXTENT_FLAG_SUPER		(1ULL << 48)
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 struct btrfs_tree_block_info {
 	struct btrfs_disk_key key;
 	u8 level;
@@ -704,14 +714,6 @@ struct btrfs_timespec {
 	__le32 nsec;
 } __attribute__ ((__packed__));
 
-enum btrfs_compression_type {
-	BTRFS_COMPRESS_NONE  = 0,
-	BTRFS_COMPRESS_ZLIB  = 1,
-	BTRFS_COMPRESS_LZO   = 2,
-	BTRFS_COMPRESS_TYPES = 2,
-	BTRFS_COMPRESS_LAST  = 3,
-};
-
 struct btrfs_inode_item {
 	/* nfs style generation number */
 	__le64 generation;
@@ -752,14 +754,6 @@ struct btrfs_dir_item {
 	__le16 name_len;
 	u8 type;
 } __attribute__ ((__packed__));
-
-#define BTRFS_ROOT_SUBVOL_RDONLY	(1ULL << 0)
-
-/*
- * Internal in-memory flag that a subvolume has been marked for deletion but
- * still visible as a directory
- */
-#define BTRFS_ROOT_SUBVOL_DEAD		(1ULL << 48)
 
 struct btrfs_root_item {
 	struct btrfs_inode_item inode;
@@ -866,10 +860,6 @@ struct btrfs_balance_item {
 	__le64 unused[4];
 } __attribute__ ((__packed__));
 
-#define BTRFS_FILE_EXTENT_INLINE 0
-#define BTRFS_FILE_EXTENT_REG 1
-#define BTRFS_FILE_EXTENT_PREALLOC 2
-
 struct btrfs_file_extent_item {
 	/*
 	 * transaction id that created this extent
@@ -934,6 +924,29 @@ struct btrfs_dev_stats_item {
 	__le64 values[BTRFS_DEV_STAT_VALUES_MAX];
 } __attribute__ ((__packed__));
 
+#endif
+
+enum btrfs_compression_type {
+	BTRFS_COMPRESS_NONE  = 0,
+	BTRFS_COMPRESS_ZLIB  = 1,
+	BTRFS_COMPRESS_LZO   = 2,
+	BTRFS_COMPRESS_TYPES = 2,
+	BTRFS_COMPRESS_LAST  = 3,
+};
+
+#define BTRFS_ROOT_SUBVOL_RDONLY	(1ULL << 0)
+
+/*
+ * Internal in-memory flag that a subvolume has been marked for deletion but
+ * still visible as a directory
+ */
+#define BTRFS_ROOT_SUBVOL_DEAD		(1ULL << 48)
+
+
+#define BTRFS_FILE_EXTENT_INLINE 0
+#define BTRFS_FILE_EXTENT_REG 1
+#define BTRFS_FILE_EXTENT_PREALLOC 2
+
 #define BTRFS_DEV_REPLACE_ITEM_CONT_READING_FROM_SRCDEV_MODE_ALWAYS	0
 #define BTRFS_DEV_REPLACE_ITEM_CONT_READING_FROM_SRCDEV_MODE_AVOID	1
 #define BTRFS_DEV_REPLACE_ITEM_STATE_NEVER_STARTED	0
@@ -970,6 +983,7 @@ struct btrfs_dev_replace {
 	struct btrfs_scrub_progress scrub_progress;
 };
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 struct btrfs_dev_replace_item {
 	/*
 	 * grow this item struct at the end for future enhancements and keep
@@ -987,6 +1001,19 @@ struct btrfs_dev_replace_item {
 	__le64 num_uncorrectable_read_errors;
 } __attribute__ ((__packed__));
 
+enum btrfs_raid_types {
+	BTRFS_RAID_RAID10,
+	BTRFS_RAID_RAID1,
+	BTRFS_RAID_DUP,
+	BTRFS_RAID_RAID0,
+	BTRFS_RAID_SINGLE,
+	BTRFS_RAID_RAID5,
+	BTRFS_RAID_RAID6,
+	BTRFS_NR_RAID_TYPES
+};
+
+#endif
+
 /* different types of block groups (and chunks) */
 #define BTRFS_BLOCK_GROUP_DATA		(1ULL << 0)
 #define BTRFS_BLOCK_GROUP_SYSTEM	(1ULL << 1)
@@ -999,17 +1026,6 @@ struct btrfs_dev_replace_item {
 #define BTRFS_BLOCK_GROUP_RAID6         (1ULL << 8)
 #define BTRFS_BLOCK_GROUP_RESERVED	(BTRFS_AVAIL_ALLOC_BIT_SINGLE | \
 					 BTRFS_SPACE_INFO_GLOBAL_RSV)
-
-enum btrfs_raid_types {
-	BTRFS_RAID_RAID10,
-	BTRFS_RAID_RAID1,
-	BTRFS_RAID_DUP,
-	BTRFS_RAID_RAID0,
-	BTRFS_RAID_SINGLE,
-	BTRFS_RAID_RAID5,
-	BTRFS_RAID_RAID6,
-	BTRFS_NR_RAID_TYPES
-};
 
 #define BTRFS_BLOCK_GROUP_TYPE_MASK	(BTRFS_BLOCK_GROUP_DATA |    \
 					 BTRFS_BLOCK_GROUP_SYSTEM |  \
@@ -1039,6 +1055,7 @@ enum btrfs_raid_types {
 #define BTRFS_EXTENDED_PROFILE_MASK	(BTRFS_BLOCK_GROUP_PROFILE_MASK | \
 					 BTRFS_AVAIL_ALLOC_BIT_SINGLE)
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 static inline u64 chunk_to_extended(u64 flags)
 {
 	if ((flags & BTRFS_BLOCK_GROUP_PROFILE_MASK) == 0)
@@ -1056,25 +1073,6 @@ struct btrfs_block_group_item {
 	__le64 chunk_objectid;
 	__le64 flags;
 } __attribute__ ((__packed__));
-
-/*
- * is subvolume quota turned on?
- */
-#define BTRFS_QGROUP_STATUS_FLAG_ON		(1ULL << 0)
-/*
- * RESCAN is set during the initialization phase
- */
-#define BTRFS_QGROUP_STATUS_FLAG_RESCAN		(1ULL << 1)
-/*
- * Some qgroup entries are known to be out of date,
- * either because the configuration has changed in a way that
- * makes a rescan necessary, or because the fs has been mounted
- * with a non-qgroup-aware version.
- * Turning qouta off and on again makes it inconsistent, too.
- */
-#define BTRFS_QGROUP_STATUS_FLAG_INCONSISTENT	(1ULL << 2)
-
-#define BTRFS_QGROUP_STATUS_VERSION        1
 
 struct btrfs_qgroup_status_item {
 	__le64 version;
@@ -1104,14 +1102,6 @@ struct btrfs_qgroup_info_item {
 	__le64 excl_cmpr;
 } __attribute__ ((__packed__));
 
-/* flags definition for qgroup limits */
-#define BTRFS_QGROUP_LIMIT_MAX_RFER	(1ULL << 0)
-#define BTRFS_QGROUP_LIMIT_MAX_EXCL	(1ULL << 1)
-#define BTRFS_QGROUP_LIMIT_RSV_RFER	(1ULL << 2)
-#define BTRFS_QGROUP_LIMIT_RSV_EXCL	(1ULL << 3)
-#define BTRFS_QGROUP_LIMIT_RFER_CMPR	(1ULL << 4)
-#define BTRFS_QGROUP_LIMIT_EXCL_CMPR	(1ULL << 5)
-
 struct btrfs_qgroup_limit_item {
 	/*
 	 * only updated when any of the other values change
@@ -1122,6 +1112,34 @@ struct btrfs_qgroup_limit_item {
 	__le64 rsv_rfer;
 	__le64 rsv_excl;
 } __attribute__ ((__packed__));
+
+#endif
+/*
+ * is subvolume quota turned on?
+ */
+#define BTRFS_QGROUP_STATUS_FLAG_ON		(1ULL << 0)
+/*
+ * RESCAN is set during the initialization phase
+ */
+#define BTRFS_QGROUP_STATUS_FLAG_RESCAN		(1ULL << 1)
+/*
+ * Some qgroup entries are known to be out of date,
+ * either because the configuration has changed in a way that
+ * makes a rescan necessary, or because the fs has been mounted
+ * with a non-qgroup-aware version.
+ * Turning qouta off and on again makes it inconsistent, too.
+ */
+#define BTRFS_QGROUP_STATUS_FLAG_INCONSISTENT	(1ULL << 2)
+
+#define BTRFS_QGROUP_STATUS_VERSION        1
+
+/* flags definition for qgroup limits */
+#define BTRFS_QGROUP_LIMIT_MAX_RFER	(1ULL << 0)
+#define BTRFS_QGROUP_LIMIT_MAX_EXCL	(1ULL << 1)
+#define BTRFS_QGROUP_LIMIT_RSV_RFER	(1ULL << 2)
+#define BTRFS_QGROUP_LIMIT_RSV_EXCL	(1ULL << 3)
+#define BTRFS_QGROUP_LIMIT_RFER_CMPR	(1ULL << 4)
+#define BTRFS_QGROUP_LIMIT_EXCL_CMPR	(1ULL << 5)
 
 /* For raid type sysfs entries */
 struct raid_kobject {
@@ -1914,6 +1932,7 @@ struct btrfs_root {
 	atomic_t will_be_snapshoted;
 };
 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
 struct btrfs_ioctl_defrag_range_args {
 	/* start of the defrag operation */
 	__u64 start;
@@ -1944,7 +1963,7 @@ struct btrfs_ioctl_defrag_range_args {
 	/* spare for later */
 	__u32 unused[4];
 };
-
+#endif
 
 /*
  * inode items have the data typically returned from stat and store other

@@ -2711,8 +2711,8 @@ again:
 				 &entry->offset_index, 1);
 	ASSERT(!ret); /* -EEXIST; Logic error */
 
-	trace_btrfs_setup_cluster(block_group, cluster,
-				  total_found * ctl->unit, 1);
+	//trace_btrfs_setup_cluster(block_group, cluster,
+	//			  total_found * ctl->unit, 1);
 	return 0;
 }
 
@@ -2804,7 +2804,7 @@ setup_cluster_no_bitmap(struct btrfs_block_group_cache *block_group,
 	} while (node && entry != last);
 
 	cluster->max_size = max_extent;
-	trace_btrfs_setup_cluster(block_group, cluster, total_size, 0);
+	//trace_btrfs_setup_cluster(block_group, cluster, total_size, 0);
 	return 0;
 }
 
@@ -2908,8 +2908,8 @@ int btrfs_find_space_cluster(struct btrfs_root *root,
 		goto out;
 	}
 
-	trace_btrfs_find_cluster(block_group, offset, bytes, empty_size,
-				 min_bytes);
+	//trace_btrfs_find_cluster(block_group, offset, bytes, empty_size,
+	//			 min_bytes);
 
 	INIT_LIST_HEAD(&bitmaps);
 	ret = setup_cluster_no_bitmap(block_group, cluster, &bitmaps, offset,
@@ -2929,9 +2929,9 @@ int btrfs_find_space_cluster(struct btrfs_root *root,
 		list_add_tail(&cluster->block_group_list,
 			      &block_group->cluster_list);
 		cluster->block_group = block_group;
-	} else {
-		trace_btrfs_failed_cluster_setup(block_group);
-	}
+	} //else {
+	//	trace_btrfs_failed_cluster_setup(block_group);
+	//}
 out:
 	spin_unlock(&cluster->lock);
 	spin_unlock(&ctl->tree_lock);
