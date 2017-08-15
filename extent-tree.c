@@ -440,7 +440,7 @@ next:
 			if (ret)
 				break;
 
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1) 
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 			if (need_resched() ||
 			    rwsem_is_contended(&fs_info->commit_root_sem)) {
 #else
@@ -3496,7 +3496,7 @@ static int update_space_info(struct btrfs_fs_info *info, u64 flags,
 	found = kzalloc(sizeof(*found), GFP_NOFS);
 	if (!found)
 		return -ENOMEM;
-#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0) 
+#if BTRFS_RHEL_VERSION_CODE <= BTRFS_RHEL_KERNEL_VERSION(3,10,0,229,0,0)
 	ret = percpu_counter_init(&found->total_bytes_pinned, 0);
 #else
 	ret = percpu_counter_init(&found->total_bytes_pinned, 0, GFP_KERNEL);
@@ -4568,10 +4568,10 @@ out:
 		    !block_rsv_use_bytes(global_rsv, orig_bytes))
 			ret = 0;
 	}
-	if (ret == -ENOSPC)
-	  //trace_btrfs_space_reservation(root->fs_info,
-	  //			      "space_info:enospc",
-	  //				      space_info->flags, orig_bytes, 1);
+	//if (ret == -ENOSPC)
+	//trace_btrfs_space_reservation(root->fs_info,
+	//			      "space_info:enospc",
+	//				      space_info->flags, orig_bytes, 1);
 	if (flushing) {
 		spin_lock(&space_info->lock);
 		space_info->flush = 0;
