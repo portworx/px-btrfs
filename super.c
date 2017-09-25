@@ -61,14 +61,10 @@
 #include "tests/btrfs-tests.h"
 #include "version_compat.h"
 
-#if BTRFS_RHEL_VERSION_CODE >= BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
-#include <linux/btrfs_tree.h>
-#endif
-
 #include "qgroup.h"
 // #define CREATE_TRACE_POINTS
 
-#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
+#if BTRFS_RHEL_VERSION_CODE < BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0)
 #include <trace/events/btrfs.h>
 #endif
 
