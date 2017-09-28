@@ -41,6 +41,11 @@
 #include "math.h"
 #include "dev-replace.h"
 #include "sysfs.h"
+#include "version_compat.h"
+
+#if BTRFS_RHEL_VERSION_CODE >= BTRFS_RHEL_KERNEL_VERSION(3,10,0,693,0,0) 
+#include <linux/uuid.h>
+#endif
 
 static int init_first_rw_device(struct btrfs_trans_handle *trans,
 				struct btrfs_root *root,
@@ -2643,7 +2648,7 @@ int btrfs_remove_chunk(struct btrfs_trans_handle *trans,
 		goto out;
 	}
 
-	trace_btrfs_chunk_free(root, map, chunk_offset, em->len);
+	//trace_btrfs_chunk_free(root, map, chunk_offset, em->len);
 
 	if (map->type & BTRFS_BLOCK_GROUP_SYSTEM) {
 		ret = btrfs_del_sys_chunk(root, chunk_objectid, chunk_offset);
@@ -4450,7 +4455,7 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 
 	num_bytes = stripe_size * data_stripes;
 
-	trace_btrfs_chunk_alloc(info->chunk_root, map, start, num_bytes);
+	//trace_btrfs_chunk_alloc(info->chunk_root, map, start, num_bytes);
 
 	em = alloc_extent_map();
 	if (!em) {

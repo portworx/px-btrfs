@@ -4251,7 +4251,7 @@ static int btrfs_cleanup_transaction(struct btrfs_root *root)
 		spin_unlock(&root->fs_info->trans_lock);
 
 		btrfs_put_transaction(t);
-		trace_btrfs_transaction_commit(root);
+		//trace_btrfs_transaction_commit(root);
 		spin_lock(&root->fs_info->trans_lock);
 	}
 	spin_unlock(&root->fs_info->trans_lock);

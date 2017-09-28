@@ -290,7 +290,9 @@ static void release_raid_kobj(struct kobject *kobj)
 }
 
 struct kobj_type btrfs_raid_ktype = {
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	.sysfs_ops = &kobj_sysfs_ops,
+#endif
 	.release = release_raid_kobj,
 	.default_attrs = raid_attributes,
 };
@@ -345,7 +347,9 @@ static void space_info_release(struct kobject *kobj)
 }
 
 struct kobj_type space_info_ktype = {
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	.sysfs_ops = &kobj_sysfs_ops,
+#endif
 	.release = space_info_release,
 	.default_attrs = space_info_attrs,
 };
@@ -443,7 +447,9 @@ static void btrfs_release_super_kobj(struct kobject *kobj)
 }
 
 static struct kobj_type btrfs_ktype = {
+#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
 	.sysfs_ops	= &kobj_sysfs_ops,
+#endif
 	.release	= btrfs_release_super_kobj,
 	.default_attrs	= btrfs_attrs,
 };

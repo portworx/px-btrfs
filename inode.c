@@ -2905,7 +2905,7 @@ static int btrfs_writepage_end_io_hook(struct page *page, u64 start, u64 end,
 	struct btrfs_workqueue *wq;
 	btrfs_work_func_t func;
 
-	trace_btrfs_writepage_end_io_hook(page, start, end, uptodate);
+	//trace_btrfs_writepage_end_io_hook(page, start, end, uptodate);
 
 	ClearPagePrivate2(page);
 	if (!btrfs_dec_test_ordered_pending(inode, &ordered_extent, start,
@@ -4857,7 +4857,7 @@ void btrfs_evict_inode(struct inode *inode)
 	u64 min_size = btrfs_calc_trunc_metadata_size(root, 1);
 	int ret;
 
-	trace_btrfs_inode_evict(inode);
+	//trace_btrfs_inode_evict(inode);
 
 	evict_inode_truncate_pages(inode);
 
@@ -5788,7 +5788,7 @@ static struct inode *btrfs_new_inode(struct btrfs_trans_handle *trans,
 	inode->i_ino = objectid;
 
 	if (dir) {
-		trace_btrfs_inode_request(dir);
+	  //trace_btrfs_inode_request(dir);
 
 		ret = btrfs_set_inode_index(dir, index);
 		if (ret) {
@@ -5878,7 +5878,7 @@ static struct inode *btrfs_new_inode(struct btrfs_trans_handle *trans,
 
 	inode_tree_add(inode);
 
-	trace_btrfs_inode_new(inode);
+	//trace_btrfs_inode_new(inode);
 	btrfs_set_inode_last_trans(trans, inode);
 
 	btrfs_update_root_times(trans, root);
@@ -6639,7 +6639,7 @@ insert:
 	write_unlock(&em_tree->lock);
 out:
 
-	trace_btrfs_get_extent(root, em);
+	//trace_btrfs_get_extent(root, em);
 
 	if (path)
 		btrfs_free_path(path);

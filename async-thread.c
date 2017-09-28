@@ -124,9 +124,9 @@ __btrfs_alloc_workqueue(const char *name, int flags, int max_active,
 	INIT_LIST_HEAD(&ret->ordered_list);
 	spin_lock_init(&ret->list_lock);
 	spin_lock_init(&ret->thres_lock);
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-	trace_btrfs_workqueue_alloc(ret, name, flags & WQ_HIGHPRI);
-#endif
+	//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	//trace_btrfs_workqueue_alloc(ret, name, flags & WQ_HIGHPRI);
+	//#endif
 	return ret;
 }
 
@@ -246,9 +246,9 @@ static void run_ordered_work(struct __btrfs_workqueue *wq)
 		 */
 		if (test_and_set_bit(WORK_ORDER_DONE_BIT, &work->flags))
 			break;
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-		trace_btrfs_ordered_sched(work);
-#endif
+		//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+		//trace_btrfs_ordered_sched(work);
+		//#endif
 		spin_unlock_irqrestore(lock, flags);
 		work->ordered_func(work);
 
@@ -262,9 +262,9 @@ static void run_ordered_work(struct __btrfs_workqueue *wq)
 		 * with the lock held though
 		 */
 		work->ordered_free(work);
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-		trace_btrfs_all_work_done(work);
-#endif
+		//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+		//trace_btrfs_all_work_done(work);
+		//#endif
 	}
 	spin_unlock_irqrestore(lock, flags);
 }
@@ -286,19 +286,19 @@ static void normal_work_helper(struct btrfs_work *work)
 		need_order = 1;
 	wq = work->wq;
 
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-	trace_btrfs_work_sched(work);
-#endif
+	//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	//trace_btrfs_work_sched(work);
+	//#endif
 	thresh_exec_hook(wq);
 	work->func(work);
 	if (need_order) {
 		set_bit(WORK_DONE_BIT, &work->flags);
 		run_ordered_work(wq);
 	}
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-	if (!need_order)
-		trace_btrfs_all_work_done(work);
-#endif
+	//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	//if (!need_order)
+	//	trace_btrfs_all_work_done(work);
+	//#endif
 }
 
 void btrfs_init_work(struct btrfs_work *work, btrfs_work_func_t uniq_func,
@@ -327,9 +327,9 @@ static inline void __btrfs_queue_work(struct __btrfs_workqueue *wq,
 		spin_unlock_irqrestore(&wq->list_lock, flags);
 	}
 	queue_work(wq->normal_wq, &work->normal_work);
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-	trace_btrfs_work_queued(work);
-#endif
+	//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	//trace_btrfs_work_queued(work);
+	//#endif
 }
 
 void btrfs_queue_work(struct btrfs_workqueue *wq,
@@ -348,9 +348,9 @@ static inline void
 __btrfs_destroy_workqueue(struct __btrfs_workqueue *wq)
 {
 	destroy_workqueue(wq->normal_wq);
-#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
-	trace_btrfs_workqueue_destroy(wq);
-#endif
+	//#if BTRFS_RHEL_VERSION_CODE > BTRFS_RHEL_KERNEL_VERSION(3,10,0,123,8,1)
+	//trace_btrfs_workqueue_destroy(wq);
+	//#endif
 	kfree(wq);
 }
 
