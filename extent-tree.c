@@ -823,7 +823,11 @@ search_again:
 			BUG();
 #endif
 		}
-		BUG_ON(num_refs == 0);
+		if (num_refs == 0) {
+			ASSERT(0);
+			ret = -EIO;
+			goto out_free;
+		}
 	} else {
 		num_refs = 0;
 		extent_flags = 0;
@@ -864,7 +868,6 @@ search_again:
 	}
 	spin_unlock(&delayed_refs->lock);
 out:
-	WARN_ON(num_refs == 0);
 	if (refs)
 		*refs = num_refs;
 	if (flags)
@@ -7851,12 +7854,15 @@ static noinline int do_walk_down(struct btrfs_trans_handle *trans,
 				       &wc->flags[level - 1]);
 	if (ret < 0) {
 		btrfs_tree_unlock(next);
+		free_extent_buffer(next);
 		return ret;
 	}
 
 	if (unlikely(wc->refs[level - 1] == 0)) {
 		btrfs_err(root->fs_info, "Missing references.");
-		BUG();
+		btrfs_tree_unlock(next);
+		free_extent_buffer(next);
+		return -EIO;
 	}
 	*lookup_info = 0;
 
