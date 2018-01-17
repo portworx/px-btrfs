@@ -2217,7 +2217,7 @@ static void btrfs_interface_exit(void)
 
 static void btrfs_print_info(void)
 {
-	printk(KERN_INFO "Btrfs loaded"
+	printk(KERN_INFO "PX Btrfs loaded"
 #ifdef CONFIG_BTRFS_DEBUG
 			", debug=on"
 #endif
