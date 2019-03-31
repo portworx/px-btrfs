@@ -33,7 +33,6 @@
 #include <asm/kmap_types.h>
 #include <linux/pagemap.h>
 #include <linux/btrfs.h>
-#include <linux/btrfs_tree.h>
 #include <linux/workqueue.h>
 #include <linux/security.h>
 #include <linux/sizes.h>
@@ -41,6 +40,7 @@
 #include "extent_io.h"
 #include "extent_map.h"
 #include "async-thread.h"
+#include "btrfs_tree.h"
 
 struct btrfs_trans_handle;
 struct btrfs_transaction;
