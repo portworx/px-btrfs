@@ -1,4 +1,10 @@
-Build EL8 Modules 
+Build from this directory using devel installed pkgs
+
+CONFIG_BTRFS_FS=m  make -C /usr/src/kernels/$(uname -r) M=$(pwd)
+
+NOTE: Btrfs requires lib/zstd compression to be built.  Refer to below for building those
+
+Build EL8 Modules from source
 
 yumdownloader --source kernel-$(uname -r)      # yum install yum-utils or dnf install dnf-utlls
 
