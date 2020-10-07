@@ -2362,7 +2362,7 @@ static void btrfs_print_mod_info(void)
 			", ref-verify=on"
 #endif
 			;
-	pr_info("Btrfs loaded, crc32c=%s%s\n", btrfs_crc32c_impl(), options);
+	pr_info("PX Btrfs[v4.15.0] loaded, crc32c=%s%s\n", btrfs_crc32c_impl(), options);
 }
 
 static int __init init_btrfs_fs(void)
