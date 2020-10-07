@@ -20,12 +20,15 @@ btrfs-$(CONFIG_BTRFS_FS_RUN_SANITY_TESTS) += tests/free-space-tests.o \
 	tests/extent-io-tests.o tests/inode-tests.o tests/qgroup-tests.o \
 	tests/free-space-tree-tests.o
 
+ifndef KVERSION
 KVERSION=$(shell uname -r)
+endif
+
 ifndef KERNELPATH
 ifeq ($(shell test -d "/usr/src/linux-headers-$(KVERSION)"; echo $$?),0)
-     KERNELPATH=/usr/src/linux-headers-$(KVERSION)
+	KERNELPATH=/usr/src/linux-headers-$(KVERSION)
 else
-     KERNELPATH=/usr/src/kernels/$(KVERSION)
+	KERNELPATH=/usr/src/kernels/$(KVERSION)
 endif
 endif
 
