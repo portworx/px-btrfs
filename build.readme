@@ -1,0 +1,23 @@
+Build from this directory using devel installed pkgs
+
+CONFIG_BTRFS_FS=m  make -C /usr/src/kernels/$(uname -r) M=$(pwd)
+
+NOTE: Btrfs requires lib/zstd compression to be built.  Refer to below for building those
+
+Build EL8 Modules from source
+
+yumdownloader --source kernel-$(uname -r)      # yum install yum-utils or dnf install dnf-utlls
+
+rpm -ivh kernel-$(uname -r).src.rpm
+cd ~/rpmbuild/SOURCES
+rpmbuild -bp ../SPECS/kernel.spec
+# dnf or yum install any required pkgs
+cd ~/rpmbuild/BUILD/kernel-<kernel versio>/linux-$(name -r)
+cp /boot/config-$(uname -r) .config
+# Edit .config enable enable module CONFIG_BTRFS_FS=m
+make oldconfig && make prepare scripts
+make SUBDIRS=fs/btrfs modules
+make SUBDIRS=lib modules
+
+# Verify the build for following modules.
+ls -al fs/btrfs/btrfs.ko lib/xxhash.ko lib/zstd/zstd_compress.ko lib/zstd/zstd_decompress.ko   

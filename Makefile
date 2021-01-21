@@ -20,3 +20,64 @@ btrfs-$(CONFIG_BTRFS_FS_RUN_SANITY_TESTS) += tests/free-space-tests.o \
 	tests/extent-buffer-tests.o tests/btrfs-tests.o \
 	tests/extent-io-tests.o tests/inode-tests.o tests/qgroup-tests.o \
 	tests/free-space-tree-tests.o tests/extent-map-tests.o
+ifndef KVERSION
+KVERSION=$(shell uname -r)
+endif
+
+ifndef KERNELPATH
+ifeq ($(shell test -d "/usr/src/linux-headers-$(KVERSION)"; echo $$?),0)
+	KERNELPATH=/usr/src/linux-headers-$(KVERSION)
+else
+	KERNELPATH=/usr/src/kernels/$(KVERSION)
+endif
+endif
+
+ifeq ($(shell test -d $(KERNELPATH); echo $$?),1)
+     $(error Kernel path: $(KERNELPATH)  directory does not exist.)
+endif
+
+ifdef KERNELOTHER
+	KERNELOTHEROPT=O=$(KERNELOTHER)
+endif
+
+ifndef RHEL_VERSION_CODE
+	SCRIPT:=$(shell pwd)"/kernel_version.sh"
+	RHEL_VERSION_CODE:=$(shell $(SCRIPT) $(KERNELPATH))
+endif
+
+ifneq ($(RHEL_VERSION_CODE), 0)
+  ccflags-y += -DRHEL_VERSION_CODE=$(RHEL_VERSION_CODE)
+endif
+
+ifeq ($(shell test  -f "/usr/bin/bc"; echo $$?),0)
+	MINKVER=3.10
+	KERNELVER=$(shell echo $(KVERSION) | /bin/sed 's/-.*//' | /bin/sed 's/\(.*\..*\)\..*/\1/')
+ifeq ($(shell echo "$(KERNELVER)>=$(MINKVER)" | /usr/bin/bc),0)
+	$(error Kernel version error: Build kernel version must be >= $(MINKVER).)
+endif
+endif
+
+MAJOR=$(shell echo $(KVERSION) | awk -F. '{print $$1}')
+MINOR=$(shell echo $(KVERSION) | awk -F. '{print $$2}')
+PATCH=$(shell echo $(KVERSION) | awk -F. '{print $$3}' | awk -F- '{print $$1}')
+export REVISION=$(shell echo $(KVERSION) | awk -F. '{print $$3}' |  awk -F- '{print $$2}')
+export VERSION=$(MAJOR).$(MINOR).$(PATCH)
+export KERNELPATH
+export OUTPATH
+
+.PHONY: rpm
+
+all:
+	make -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) modules
+
+insert: all
+	insmod btrfs.ko
+
+clean:
+	make -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) clean
+
+install:
+	make V=1 -C $(KERNELPATH) $(KERNELOTHEROPT) RHEL_VERSION_CODE=$(RHEL_VERSION_CODE) M=$(CURDIR) modules_install
+
+distclean: clean
+	@/bin/rm -f  config.* Makefile
