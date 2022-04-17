@@ -2980,7 +2980,11 @@ int open_ctree(struct super_block *sb,
 
 	sb->s_bdi->congested_fn = btrfs_congested_fn;
 	sb->s_bdi->congested_data = fs_info;
+#if defined(BDI_CAP_CGROUP_WRITEBACK)
 	sb->s_bdi->capabilities |= BDI_CAP_CGROUP_WRITEBACK;
+#else
+	sb->s_bdi->capabilities |= BDI_CAP_WRITEBACK | BDI_CAP_WRITEBACK_ACCT;
+#endif
 	sb->s_bdi->ra_pages = VM_READAHEAD_PAGES;
 	sb->s_bdi->ra_pages *= btrfs_super_num_devices(disk_super);
 	sb->s_bdi->ra_pages = max(sb->s_bdi->ra_pages, SZ_4M / PAGE_SIZE);

@@ -45,6 +45,10 @@ ifndef RHEL_VERSION_CODE
 	RHEL_VERSION_CODE:=$(shell $(SCRIPT) $(KERNELPATH))
 endif
 
+ifeq ($(shell test  -f "arch/x86/include/asm/kmap_types.h"; echo $$?),1)
+  ccflags-y += -DNO_KMAP_TYPES_H
+endif
+
 ifneq ($(RHEL_VERSION_CODE), 0)
   ccflags-y += -DRHEL_VERSION_CODE=$(RHEL_VERSION_CODE)
 endif

@@ -18,7 +18,9 @@
 #include <linux/slab.h>
 #include <linux/kobject.h>
 #include <trace/events/btrfs.h>
+#if !defined(NO_KMAP_TYPES_H)
 #include <asm/kmap_types.h>
+#endif
 #include <linux/pagemap.h>
 #include <linux/btrfs.h>
 #include <linux/btrfs_tree.h>
@@ -31,6 +33,31 @@
 #include "extent_io.h"
 #include "extent_map.h"
 #include "async-thread.h"
+
+/* SPDX-License-Identifier: GPL-2.0 */
+#ifndef _ASM_X86_KMAP_TYPES_H
+#define _ASM_X86_KMAP_TYPES_H
+
+#if defined(CONFIG_X86_32) && defined(CONFIG_DEBUG_HIGHMEM)
+#define  __WITH_KM_FENCE
+#endif
+
+/* SPDX-License-Identifier: GPL-2.0 */
+#ifndef _ASM_GENERIC_KMAP_TYPES_H
+#define _ASM_GENERIC_KMAP_TYPES_H
+
+#ifdef __WITH_KM_FENCE
+# define KM_TYPE_NR 41
+#else
+# define KM_TYPE_NR 20
+#endif
+
+#endif /* _ASM_GENERIC_KMAP_TYPES_H */
+
+#undef __WITH_KM_FENCE
+
+#endif /* _ASM_X86_KMAP_TYPES_H */
+
 
 struct btrfs_trans_handle;
 struct btrfs_transaction;
