@@ -1617,8 +1617,12 @@ static noinline ssize_t __btrfs_buffered_write(struct file *file,
 		 * Fault pages before locking them in prepare_pages
 		 * to avoid recursive lock
 		 */
+#ifdef FAULT_IN_IOV
+		if (unlikely(fault_in_iov_iter_readable(i, write_bytes))) {
+#else
 		if (unlikely(iov_iter_fault_in_readable(i, write_bytes))) {
-			ret = -EFAULT;
+#endif
+		  ret = -EFAULT;
 			break;
 		}
 

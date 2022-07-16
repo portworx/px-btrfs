@@ -61,6 +61,12 @@ ifeq ($(shell echo "$(KERNELVER)>=$(MINKVER)" | /usr/bin/bc),0)
 endif
 endif
 
+ifeq ($(shell test -f "include/linux/uio.h"; echo $$?),0)
+ifeq ($(shell grep -q fault_in_iov_iter_readable "include/linux/uio.h"; echo $$?),0)
+	ccflags-y += -DFAULT_IN_IOV
+endif
+endif
+
 MAJOR=$(shell echo $(KVERSION) | awk -F. '{print $$1}')
 MINOR=$(shell echo $(KVERSION) | awk -F. '{print $$2}')
 PATCH=$(shell echo $(KVERSION) | awk -F. '{print $$3}' | awk -F- '{print $$1}')
