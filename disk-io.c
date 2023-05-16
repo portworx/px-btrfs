@@ -1077,7 +1077,7 @@ static const struct address_space_operations btree_aops = {
 #ifdef CONFIG_MIGRATION
 	.migratepage	= btree_migratepage,
 #endif
-	.set_page_dirty = btree_set_page_dirty,
+	//JAR .set_page_dirty = btree_set_page_dirty,
 };
 
 struct extent_buffer *btrfs_find_create_tree_block(
