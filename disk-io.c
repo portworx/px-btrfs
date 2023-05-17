@@ -1021,6 +1021,7 @@ static void btree_invalidatepage(struct page *page, unsigned int offset,
 	}
 }
 
+#if 0
 static int btree_set_page_dirty(struct page *page)
 {
 #ifdef DEBUG
@@ -1069,6 +1070,7 @@ static int btree_set_page_dirty(struct page *page)
 #endif
 	return __set_page_dirty_nobuffers(page);
 }
+#endif
 
 static const struct address_space_operations btree_aops = {
 	.writepages	= btree_writepages,

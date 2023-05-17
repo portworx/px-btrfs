@@ -608,7 +608,7 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 			struct btrfs_device *device, fmode_t flags,
 			void *holder)
 {
-	struct request_queue *q;
+	//struct request_queue *q;
 	struct block_device *bdev;
 	struct btrfs_super_block *disk_super;
 	u64 devid;
@@ -2553,7 +2553,7 @@ error:
 int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path)
 {
 	struct btrfs_root *root = fs_info->dev_root;
-	struct request_queue *q;
+	//struct request_queue *q;
 	struct btrfs_trans_handle *trans;
 	struct btrfs_device *device;
 	struct block_device *bdev;
@@ -2625,7 +2625,7 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 		goto error_free_zone;
 	}
 
-	q = bdev_get_queue(bdev);
+	//q = bdev_get_queue(bdev);
 	set_bit(BTRFS_DEV_STATE_WRITEABLE, &device->dev_state);
 	device->generation = trans->transid;
 	device->io_width = fs_info->sectorsize;
