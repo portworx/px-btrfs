@@ -241,47 +241,6 @@ struct btrfsic_state {
 	u32 datablock_size;
 };
 
-static void btrfsic_block_init(struct btrfsic_block *b);
-static struct btrfsic_block *btrfsic_block_alloc(void);
-static void btrfsic_block_free(struct btrfsic_block *b);
-static void btrfsic_block_link_init(struct btrfsic_block_link *n);
-static struct btrfsic_block_link *btrfsic_block_link_alloc(void);
-static void btrfsic_block_link_free(struct btrfsic_block_link *n);
-static void btrfsic_dev_state_init(struct btrfsic_dev_state *ds);
-static struct btrfsic_dev_state *btrfsic_dev_state_alloc(void);
-static void btrfsic_dev_state_free(struct btrfsic_dev_state *ds);
-static void btrfsic_block_hashtable_init(struct btrfsic_block_hashtable *h);
-static void btrfsic_block_hashtable_add(struct btrfsic_block *b,
-					struct btrfsic_block_hashtable *h);
-static void btrfsic_block_hashtable_remove(struct btrfsic_block *b);
-static struct btrfsic_block *btrfsic_block_hashtable_lookup(
-		struct block_device *bdev,
-		u64 dev_bytenr,
-		struct btrfsic_block_hashtable *h);
-static void btrfsic_block_link_hashtable_init(
-		struct btrfsic_block_link_hashtable *h);
-static void btrfsic_block_link_hashtable_add(
-		struct btrfsic_block_link *l,
-		struct btrfsic_block_link_hashtable *h);
-static void btrfsic_block_link_hashtable_remove(struct btrfsic_block_link *l);
-static struct btrfsic_block_link *btrfsic_block_link_hashtable_lookup(
-		struct block_device *bdev_ref_to,
-		u64 dev_bytenr_ref_to,
-		struct block_device *bdev_ref_from,
-		u64 dev_bytenr_ref_from,
-		struct btrfsic_block_link_hashtable *h);
-static void btrfsic_dev_state_hashtable_init(
-		struct btrfsic_dev_state_hashtable *h);
-static void btrfsic_dev_state_hashtable_add(
-		struct btrfsic_dev_state *ds,
-		struct btrfsic_dev_state_hashtable *h);
-static void btrfsic_dev_state_hashtable_remove(struct btrfsic_dev_state *ds);
-static struct btrfsic_dev_state *btrfsic_dev_state_hashtable_lookup(dev_t dev,
-		struct btrfsic_dev_state_hashtable *h);
-static struct btrfsic_stack_frame *btrfsic_stack_frame_alloc(void);
-static void btrfsic_stack_frame_free(struct btrfsic_stack_frame *sf);
-static int btrfsic_process_superblock(struct btrfsic_state *state,
-				      struct btrfs_fs_devices *fs_devices);
 static int btrfsic_process_metablock(struct btrfsic_state *state,
 				     struct btrfsic_block *block,
 				     struct btrfsic_block_data_ctx *block_ctx,
@@ -311,14 +270,6 @@ static int btrfsic_map_block(struct btrfsic_state *state, u64 bytenr, u32 len,
 static void btrfsic_release_block_ctx(struct btrfsic_block_data_ctx *block_ctx);
 static int btrfsic_read_block(struct btrfsic_state *state,
 			      struct btrfsic_block_data_ctx *block_ctx);
-static void btrfsic_dump_database(struct btrfsic_state *state);
-static int btrfsic_test_for_metadata(struct btrfsic_state *state,
-				     char **datav, unsigned int num_pages);
-static void btrfsic_process_written_block(struct btrfsic_dev_state *dev_state,
-					  u64 dev_bytenr, char **mapped_datav,
-					  unsigned int num_pages,
-					  struct bio *bio, int *bio_is_patched,
-					  int submit_bio_bh_rw);
 static int btrfsic_process_written_superblock(
 		struct btrfsic_state *state,
 		struct btrfsic_block *const block,
@@ -1506,7 +1457,7 @@ static int btrfsic_map_block(struct btrfsic_state *state, u64 bytenr, u32 len,
 	struct btrfs_fs_info *fs_info = state->fs_info;
 	int ret;
 	u64 length;
-	struct btrfs_bio *multi = NULL;
+	struct btrfs_io_context *multi = NULL;
 	struct btrfs_device *device;
 
 	length = len;
@@ -1560,10 +1511,8 @@ static void btrfsic_release_block_ctx(struct btrfsic_block_data_ctx *block_ctx)
 		/* Pages must be unmapped in reverse order */
 		while (num_pages > 0) {
 			num_pages--;
-			if (block_ctx->datav[num_pages]) {
-				kunmap_local(block_ctx->datav[num_pages]);
+			if (block_ctx->datav[num_pages])
 				block_ctx->datav[num_pages] = NULL;
-			}
 			if (block_ctx->pagev[num_pages]) {
 				__free_page(block_ctx->pagev[num_pages]);
 				block_ctx->pagev[num_pages] = NULL;
@@ -1614,7 +1563,7 @@ static int btrfsic_read_block(struct btrfsic_state *state,
 		struct bio *bio;
 		unsigned int j;
 
-		bio = btrfs_io_bio_alloc(num_pages - i);
+		bio = btrfs_bio_alloc(num_pages - i);
 		bio_set_dev(bio, block_ctx->dev->bdev);
 		bio->bi_iter.bi_sector = dev_bytenr >> 9;
 		bio->bi_opf = REQ_OP_READ;
@@ -1640,7 +1589,7 @@ static int btrfsic_read_block(struct btrfsic_state *state,
 		i = j;
 	}
 	for (i = 0; i < num_pages; i++)
-		block_ctx->datav[i] = kmap_local_page(block_ctx->pagev[i]);
+		block_ctx->datav[i] = page_address(block_ctx->pagev[i]);
 
 	return block_ctx->len;
 }
@@ -2724,7 +2673,7 @@ static void __btrfsic_submit_bio(struct bio *bio)
 
 		bio_for_each_segment(bvec, bio, iter) {
 			BUG_ON(bvec.bv_len != PAGE_SIZE);
-			mapped_datav[i] = kmap_local_page(bvec.bv_page);
+			mapped_datav[i] = page_address(bvec.bv_page);
 			i++;
 
 			if (dev_state->state->print_mask &
@@ -2737,9 +2686,6 @@ static void __btrfsic_submit_bio(struct bio *bio)
 					      mapped_datav, segs,
 					      bio, &bio_is_patched,
 					      bio->bi_opf);
-		/* Unmap in reverse order */
-		for (--i; i >= 0; i--)
-			kunmap_local(mapped_datav[i]);
 		kfree(mapped_datav);
 	} else if (NULL != dev_state && (bio->bi_opf & REQ_PREFLUSH)) {
 		if (dev_state->state->print_mask &

@@ -13,6 +13,115 @@
 #include "ordered-data.h"
 #include "delayed-inode.h"
 
+/* //JAR
+ * Data and metadata for an encoded read or write.
+ *
+ * Encoded I/O bypasses any encoding automatically done by the filesystem (e.g.,
+ * compression). This can be used to read the compressed contents of a file or
+ * write pre-compressed data directly to a file.
+ *
+ * BTRFS_IOC_ENCODED_READ and BTRFS_IOC_ENCODED_WRITE are essentially
+ * preadv/pwritev with additional metadata about how the data is encoded and the
+ * size of the unencoded data.
+ *
+ * BTRFS_IOC_ENCODED_READ fills the given iovecs with the encoded data, fills
+ * the metadata fields, and returns the size of the encoded data. It reads one
+ * extent per call. It can also read data which is not encoded.
+ *
+ * BTRFS_IOC_ENCODED_WRITE uses the metadata fields, writes the encoded data
+ * from the iovecs, and returns the size of the encoded data. Note that the
+ * encoded data is not validated when it is written; if it is not valid (e.g.,
+ * it cannot be decompressed), then a subsequent read may return an error.
+ *
+ * Since the filesystem page cache contains decoded data, encoded I/O bypasses
+ * the page cache. Encoded I/O requires CAP_SYS_ADMIN.
+ */
+struct btrfs_ioctl_encoded_io_args { //JAR
+        /* Input parameters for both reads and writes. */
+
+        /*
+         * iovecs containing encoded data.
+         *
+         * For reads, if the size of the encoded data is larger than the sum of
+         * iov[n].iov_len for 0 <= n < iovcnt, then the ioctl fails with
+         * ENOBUFS.
+         *
+         * For writes, the size of the encoded data is the sum of iov[n].iov_len
+         * for 0 <= n < iovcnt. This must be less than 128 KiB (this limit may
+         * increase in the future). This must also be less than or equal to
+         * unencoded_len.
+         */
+        const struct iovec __user *iov;
+        /* Number of iovecs. */
+        unsigned long iovcnt;
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * Offset in file.                                                                                                                                                                                                                                                                                                                                                
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * For writes, must be aligned to the sector size of the filesystem.                                                                                                                                                                                                                                                                                              
+         */
+        __s64 offset;
+        /* Currently must be zero. */
+        __u64 flags;
+
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * For reads, the following members are output parameters that will                                                                                                                                                                                                                                                                                               
+         * contain the returned metadata for the encoded data.                                                                                                                                                                                                                                                                                                            
+         * For writes, the following members must be set to the metadata for the                                                                                                                                                                                                                                                                                          
+         * encoded data.                                                                                                                                                                                                                                                                                                                                                  
+         */
+
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * Length of the data in the file.                                                                                                                                                                                                                                                                                                                                
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * Must be less than or equal to unencoded_len - unencoded_offset. For                                                                                                                                                                                                                                                                                            
+         * writes, must be aligned to the sector size of the filesystem unless                                                                                                                                                                                                                                                                                            
+         * the data ends at or beyond the current end of the file.                                                                                                                                                                                                                                                                                                        
+         */
+        __u64 len;
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * Length of the unencoded (i.e., decrypted and decompressed) data.                                                                                                                                                                                                                                                                                               
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * For writes, must be no more than 128 KiB (this limit may increase in                                                                                                                                                                                                                                                                                           
+         * the future). If the unencoded data is actually longer than                                                                                                                                                                                                                                                                                                     
+         * unencoded_len, then it is truncated; if it is shorter, then it is                                                                                                                                                                                                                                                                                              
+         * extended with zeroes.                                                                                                                                                                                                                                                                                                                                          
+         */
+        __u64 unencoded_len;
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * Offset from the first byte of the unencoded data to the first byte of                                                                                                                                                                                                                                                                                          
+         * logical data in the file.                                                                                                                                                                                                                                                                                                                                      
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * Must be less than unencoded_len.                                                                                                                                                                                                                                                                                                                               
+         */
+        __u64 unencoded_offset;
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * BTRFS_ENCODED_IO_COMPRESSION_* type.                                                                                                                                                                                                                                                                                                                           
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * For writes, must not be BTRFS_ENCODED_IO_COMPRESSION_NONE.                                                                                                                                                                                                                                                                                                     
+         */
+        __u32 compression;
+        /* Currently always BTRFS_ENCODED_IO_ENCRYPTION_NONE. */
+        __u32 encryption;
+        /*                                                                                                                                                                                                                                                                                                                                                                
+         * Reserved for future expansion.                                                                                                                                                                                                                                                                                                                                 
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * For reads, always returned as zero. Users should check for non-zero                                                                                                                                                                                                                                                                                            
+         * bytes. If there are any, then the kernel has a newer version of this                                                                                                                                                                                                                                                                                           
+         * structure with additional information that the user definition is                                                                                                                                                                                                                                                                                              
+         * missing.                                                                                                                                                                                                                                                                                                                                                       
+         *                                                                                                                                                                                                                                                                                                                                                                
+         * For writes, must be zeroed.                                                                                                                                                                                                                                                                                                                                    
+         */
+        __u8 reserved[64];
+};
+
+/*
+ * Since we search a directory based on f_pos (struct dir_context::pos) we have
+ * to start at 2 since '.' and '..' have f_pos of 0 and 1 respectively, so
+ * everybody else has to start at 2 (see btrfs_real_readdir() and dir_emit_dots()).
+ */
+#define BTRFS_DIR_START_INDEX 2
+
 /*
  * ordered_data_close is set by truncate when a file that used
  * to have good data has been truncated to zero.  When it is set
@@ -51,6 +160,13 @@ enum {
 	 * the file range, inode's io_tree).
 	 */
 	BTRFS_INODE_NO_DELALLOC_FLUSH,
+	/*
+	 * Set when we are working on enabling verity for a file. Computing and
+	 * writing the whole Merkle tree can take a while so we want to prevent
+	 * races where two separate tasks attempt to simultaneously start verity
+	 * on the same file.
+	 */
+	BTRFS_INODE_VERITY_IN_PROGRESS,
 };
 
 /* in memory btrfs inode */
@@ -131,17 +247,26 @@ struct btrfs_inode {
 	/* a local copy of root's last_log_commit */
 	int last_log_commit;
 
-	/* total number of bytes pending delalloc, used by stat to calc the
-	 * real block usage of the file
+	/*
+	 * Total number of bytes pending delalloc, used by stat to calculate the
+	 * real block usage of the file. This is used only for files.
 	 */
 	u64 delalloc_bytes;
 
-	/*
-	 * Total number of bytes pending delalloc that fall within a file
-	 * range that is either a hole or beyond EOF (and no prealloc extent
-	 * exists in the range). This is always <= delalloc_bytes.
-	 */
-	u64 new_delalloc_bytes;
+	union {
+		/*
+		 * Total number of bytes pending delalloc that fall within a file
+		 * range that is either a hole or beyond EOF (and no prealloc extent
+		 * exists in the range). This is always <= delalloc_bytes and this
+		 * is used only for files.
+		 */
+		u64 new_delalloc_bytes;
+		/*
+		 * The offset of the last dir index key that was logged.
+		 * This is used only for directories.
+		 */
+		u64 last_dir_index_offset;
+	};
 
 	/*
 	 * total number of bytes pending defrag, used by stat to check whether
@@ -157,8 +282,9 @@ struct btrfs_inode {
 	u64 disk_i_size;
 
 	/*
-	 * if this is a directory then index_cnt is the counter for the index
-	 * number for new files that are created
+	 * If this is a directory then index_cnt is the counter for the index
+	 * number for new files that are created. For an empty directory, this
+	 * must be initialized to BTRFS_DIR_START_INDEX.
 	 */
 	u64 index_cnt;
 
@@ -189,8 +315,10 @@ struct btrfs_inode {
 	 */
 	u64 csum_bytes;
 
-	/* flags field from the on disk inode */
+	/* Backwards incompatible flags, lower half of inode_item::flags  */
 	u32 flags;
+	/* Read-only compatibility flags, upper half of inode_item::flags */
+	u32 ro_flags;
 
 	/*
 	 * Counters to keep track of the number of extent item's we may use due
@@ -315,6 +443,36 @@ static inline void btrfs_set_inode_last_sub_trans(struct btrfs_inode *inode)
 	spin_unlock(&inode->lock);
 }
 
+/*
+ * Should be called while holding the inode's VFS lock in exclusive mode or in a
+ * context where no one else can access the inode concurrently (during inode
+ * creation or when loading an inode from disk).
+ */
+static inline void btrfs_set_inode_full_sync(struct btrfs_inode *inode)
+{
+	set_bit(BTRFS_INODE_NEEDS_FULL_SYNC, &inode->runtime_flags);
+	/*
+	 * The inode may have been part of a reflink operation in the last
+	 * transaction that modified it, and then a fsync has reset the
+	 * last_reflink_trans to avoid subsequent fsyncs in the same
+	 * transaction to do unnecessary work. So update last_reflink_trans
+	 * to the last_trans value (we have to be pessimistic and assume a
+	 * reflink happened).
+	 *
+	 * The ->last_trans is protected by the inode's spinlock and we can
+	 * have a concurrent ordered extent completion update it. Also set
+	 * last_reflink_trans to ->last_trans only if the former is less than
+	 * the later, because we can be called in a context where
+	 * last_reflink_trans was set to the current transaction generation
+	 * while ->last_trans was not yet updated in the current transaction,
+	 * and therefore has a lower value.
+	 */
+	spin_lock(&inode->lock);
+	if (inode->last_reflink_trans < inode->last_trans)
+		inode->last_reflink_trans = inode->last_trans;
+	spin_unlock(&inode->lock);
+}
+
 static inline bool btrfs_inode_in_log(struct btrfs_inode *inode, u64 generation)
 {
 	bool ret = false;
@@ -328,9 +486,25 @@ static inline bool btrfs_inode_in_log(struct btrfs_inode *inode, u64 generation)
 	return ret;
 }
 
+/*
+ * Check if the inode has flags compatible with compression
+ */
+static inline bool btrfs_inode_can_compress(const struct btrfs_inode *inode)
+{
+	if (inode->flags & BTRFS_INODE_NODATACOW ||
+	    inode->flags & BTRFS_INODE_NODATASUM)
+		return false;
+	return true;
+}
+
 struct btrfs_dio_private {
 	struct inode *inode;
-	u64 logical_offset;
+
+	/*
+	 * Since DIO can use anonymous page, we cannot use page_offset() to
+	 * grab the file offset, thus need a dedicated member for file offset.
+	 */
+	u64 file_offset;
 	u64 disk_bytenr;
 	/* Used for bio::bi_size */
 	u32 bytes;
@@ -347,6 +521,22 @@ struct btrfs_dio_private {
 	/* Array of checksums */
 	u8 csums[];
 };
+
+/*
+ * btrfs_inode_item stores flags in a u64, btrfs_inode stores them in two
+ * separate u32s. These two functions convert between the two representations.
+ */
+static inline u64 btrfs_inode_combine_flags(u32 flags, u32 ro_flags)
+{
+	return (flags | ((u64)ro_flags << 32));
+}
+
+static inline void btrfs_inode_split_flags(u64 inode_item_flags,
+					   u32 *flags, u32 *ro_flags)
+{
+	*flags = (u32)inode_item_flags;
+	*ro_flags = (u32)(inode_item_flags >> 32);
+}
 
 /* Array of bytes with variable length, hexadecimal format 0x1234 */
 #define CSUM_FMT				"0x%*phN"
