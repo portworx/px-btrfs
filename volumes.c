@@ -800,7 +800,6 @@ static noinline struct btrfs_device *device_list_add(const char *path,
 
 
 	if (!fs_devices) {
-	  pr_info("BTRFS inside device_list_add if (!fs_devices)\n");
 		if (has_metadata_uuid)
 			fs_devices = alloc_fs_devices(disk_super->fsid,
 						      disk_super->metadata_uuid);
@@ -848,7 +847,6 @@ static noinline struct btrfs_device *device_list_add(const char *path,
 	}
 
 	if (!device) {
-	  pr_info("BTRFS inside device_list_add if (!device)\n");
 		if (fs_devices->opened) {
 			mutex_unlock(&fs_devices->device_list_mutex);
 			return ERR_PTR(-EBUSY);
@@ -856,7 +854,6 @@ static noinline struct btrfs_device *device_list_add(const char *path,
 
 		device = btrfs_alloc_device(NULL, &devid,
 					    disk_super->dev_item.uuid);
-		pr_info("BTRFS inside device_list_add after btrfs_alloc_device %p\n", device);
 		if (IS_ERR(device)) {
 			mutex_unlock(&fs_devices->device_list_mutex);
 			/* we can safely leave the fs_devices entry around */
@@ -890,8 +887,6 @@ static noinline struct btrfs_device *device_list_add(const char *path,
 				current->comm, task_pid_nr(current));
 
 	} else if (!device->name || strcmp(device->name->str, path)) {
-	  pr_info("BTRFS inside device_list_add if (!device->name || strcmp(device->name->str, path))\n");
-
 		/*
 		 * When FS is already mounted.
 		 * 1. If you are here and if the device->name is NULL that
@@ -1364,27 +1359,23 @@ struct btrfs_device *btrfs_scan_one_device(const char *path, fmode_t flags,
 	flags |= FMODE_EXCL;
 
 	bdev = blkdev_get_by_path(path, flags, holder);
-	pr_info("Btrfs inside of btrfs_scan_one_device after blkdev_get_by_path(): %p : %s\n", bdev, path);
 	if (IS_ERR(bdev))
 		return ERR_CAST(bdev);
 
 	bytenr_orig = btrfs_sb_offset(0);
 	ret = btrfs_sb_log_location_bdev(bdev, 0, READ, &bytenr);
-	pr_info("Btrfs inside of btrfs_scan_one_device after btrfs_sb_log_location_bdev(): %d\n", ret);
 	if (ret) {
 		device = ERR_PTR(ret);
 		goto error_bdev_put;
 	}
 
 	disk_super = btrfs_read_disk_super(bdev, bytenr, bytenr_orig);
-	pr_info("Btrfs inside of btrfs_scan_one_device after btrfs_read_disk_super(): %p\n", disk_super);
 	if (IS_ERR(disk_super)) {
 		device = ERR_CAST(disk_super);
 		goto error_bdev_put;
 	}
 
 	device = device_list_add(path, disk_super, &new_device_added);
-	pr_info("Btrfs inside of btrfs_scan_one_device after device_list_add(): %p : %s\n", device, path);
 	if (!IS_ERR(device) && new_device_added)
 		btrfs_free_stale_devices(device->devt, device);
 
@@ -6962,7 +6953,6 @@ struct btrfs_device *btrfs_alloc_device(struct btrfs_fs_info *fs_info,
 		return ERR_PTR(-EINVAL);
 
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
-	pr_info("BTRFS inside btrfs_alloc_device after kzalloc %p\n", dev);
 	if (!dev)
 		return ERR_PTR(-ENOMEM);
 
@@ -6972,7 +6962,6 @@ struct btrfs_device *btrfs_alloc_device(struct btrfs_fs_info *fs_info,
 	 */
 	//JAR dev->flush_bio = bio_kmalloc(GFP_KERNEL, 0)
 	dev->flush_bio = bio_kmalloc(0, GFP_KERNEL);  //JAR
-	pr_info("BTRFS inside btrfs_alloc_device after bio_kmalloc %p\n", dev->flush_bio);
 	if (!dev->flush_bio) {
 		kfree(dev);
 		return ERR_PTR(-ENOMEM);
@@ -6986,10 +6975,9 @@ struct btrfs_device *btrfs_alloc_device(struct btrfs_fs_info *fs_info,
 	INIT_LIST_HEAD(&dev->post_commit_list);
 
 	atomic_set(&dev->dev_stats_ccnt, 0);
-	pr_info("BTRFS inside btrfs_alloc_device before btrfs_device_data_ordered_init %p\n", dev);
 
 	btrfs_device_data_ordered_init(dev);
-	pr_info("BTRFS inside btrfs_alloc_device after btrfs_device_data_ordered_init %p\n", dev);
+
 	extent_io_tree_init(fs_info, &dev->alloc_state,
 			    IO_TREE_DEVICE_ALLOC_STATE, NULL);
 

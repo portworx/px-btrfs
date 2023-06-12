@@ -2472,7 +2472,6 @@ static long btrfs_control_ioctl(struct file *file, unsigned int cmd,
 		device = btrfs_scan_one_device(vol->name, FMODE_READ,
 					       &btrfs_root_fs_type);
 		ret = PTR_ERR_OR_ZERO(device);
-		pr_info("Btrfs inside of btrfs_control_ioctl after PTR_ERR_OR_ZERO: %p : %d\n", device, ret);
 		mutex_unlock(&uuid_mutex);
 		break;
 	case BTRFS_IOC_FORGET_DEV:

@@ -4264,13 +4264,6 @@ static void write_dev_flush(struct btrfs_device *device)
 	if (!test_bit(QUEUE_FLAG_WC, &q->queue_flags))
 		return;
 #endif
-	/*
-	pr_info("BTRFS inside write_dev_flush() before bio_reset: %p\n", bio);
-	pr_info("BTRFS inside write_dev_flush() before bio_reset: %p\n", bio->bi_blkg);
-	if (bio->bi_blkg) {
-	  pr_info("BTRFS inside write_dev_flush() before bio_reset BIO is null\n"); 
-        }
-	*/
 	
 	bio_reset(bio, device->bdev, REQ_OP_WRITE | REQ_SYNC | REQ_PREFLUSH);
 	bio->bi_end_io = btrfs_end_empty_barrier;
