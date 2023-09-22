@@ -12,7 +12,7 @@
 #include <linux/writeback.h>
 #include <linux/pagevec.h>
 #include <linux/prefetch.h>
-#include <linux/cleancache.h>
+//JAR #include <linux/cleancache.h>
 #include "misc.h"
 #include "extent_io.h"
 #include "extent-io-tree.h"
@@ -3148,7 +3148,9 @@ struct bio *btrfs_io_bio_alloc(unsigned int nr_iovecs)
 	struct bio *bio;
 
 	/* Bio allocation backed by a bioset does not fail */
-	bio = bio_alloc_bioset(GFP_NOFS, nr_iovecs, &btrfs_bioset);
+	//JAR replaced with below: bio = bio_alloc_bioset(GFP_NOFS, nr_iovecs, &btrfs_bioset);
+
+	bio = bio_alloc_bioset(NULL, nr_iovecs, 0, GFP_NOFS, &btrfs_bioset);
 	btrfs_io_bio_init(btrfs_io_bio(bio));
 	return bio;
 }
@@ -3335,7 +3337,6 @@ static int submit_extent_page(unsigned int opf,
 	bio_add_page(bio, page, io_size, pg_offset);
 	bio->bi_end_io = end_io_func;
 	bio->bi_private = tree;
-	bio->bi_write_hint = page->mapping->host->i_write_hint;
 	bio->bi_opf = opf;
 	if (wbc) {
 		struct block_device *bdev;
@@ -3499,7 +3500,9 @@ int btrfs_do_readpage(struct page *page, struct extent_map **em_cached,
 		goto out;
 	}
 
-	if (!PageUptodate(page)) {
+	//JAR - comment out below
+	/*
+	  if (!PageUptodate(page)) {
 		if (cleancache_get_page(page) == 0) {
 			BUG_ON(blocksize != PAGE_SIZE);
 			unlock_extent(tree, start, end);
@@ -3507,6 +3510,7 @@ int btrfs_do_readpage(struct page *page, struct extent_map **em_cached,
 			goto out;
 		}
 	}
+	*/
 
 	if (page->index == last_byte >> PAGE_SHIFT) {
 		size_t zero_offset = offset_in_page(last_byte);
