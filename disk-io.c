@@ -978,8 +978,30 @@ static int btree_migratepage(struct address_space *mapping,
 	if (page_has_private(page) &&
 	    !try_to_release_page(page, GFP_KERNEL))
 		return -EAGAIN;
-	return migrate_page(mapping, newpage, page, mode);
+	
+	// JAR return migrate_page(mapping, newpage, page, mode);
+        return migrate_folio(mapping, page_folio(newpage), page_folio(page), mode);
 }
+// JAR
+static int btree_migrate_folio(struct address_space *mapping,
+		struct folio *dst, struct folio *src, enum migrate_mode mode)
+{
+	/*
+	 * we can't safely write a btree page from here,
+	 * we haven't done the locking hook
+	 */
+	if (folio_test_dirty(src))
+		return -EAGAIN;
+	/*
+	 * Buffers may be managed in a filesystem specific way.
+	 * We must have no buffers or drop them.
+	 */
+	if (folio_get_private(src) &&
+	    !filemap_release_folio(src, GFP_KERNEL))
+		return -EAGAIN;
+	return migrate_folio(mapping, dst, src, mode);
+}
+// JAR - added 1 func above
 #endif
 
 
@@ -1004,6 +1026,16 @@ static int btree_writepages(struct address_space *mapping,
 	}
 	return btree_write_cache_pages(mapping, wbc);
 }
+
+// JAR 
+static bool btree_release_folio(struct folio *folio, gfp_t gfp_flags)
+{
+	if (folio_test_writeback(folio) || folio_test_dirty(folio))
+		return false;
+
+	return try_release_extent_buffer(&folio->page);
+}
+// JAR - added 1 func above
 
 static int btree_releasepage(struct page *page, gfp_t gfp_flags)
 {
@@ -1080,10 +1112,12 @@ static bool btree_dirty_folio(struct address_space *mapping,
 
 static const struct address_space_operations btree_aops = {
 	.writepages	= btree_writepages,
-	.releasepage	= btree_releasepage,
+	// JAR .releasepage	= btree_release_folio,
+	.release_folio	= btree_release_folio,
 	.invalidate_folio = btree_invalidate_folio,
 #ifdef CONFIG_MIGRATION
-	.migratepage	= btree_migratepage,
+	// JAR .migratepage	= btree_migratepage,
+	.migrate_folio	= btree_migrate_folio,
 #endif
 	.dirty_folio = btree_dirty_folio,
 };
