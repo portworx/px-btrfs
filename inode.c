@@ -8221,7 +8221,36 @@ static int btrfs_releasepage(struct page *page, gfp_t gfp_flags)
 	return __btrfs_releasepage(page, gfp_flags);
 }
 
+// JAR - 
+static bool btrfs_release_folio(struct folio *folio, gfp_t gfp_flags)
+{
+        if (folio_test_writeback(folio) || folio_test_dirty(folio))
+                return false;
+
+        return  btrfs_releasepage(&folio->page, gfp_flags);
+}
+//------- JAR 1 funcs above
+
 #ifdef CONFIG_MIGRATION
+// JAR - 
+static int migrate_page_move_mapping(struct address_space *mapping,
+		struct page *newpage, struct page *page, int extra_count)
+{
+	return folio_migrate_mapping(mapping, page_folio(newpage),
+					page_folio(page), extra_count);
+}
+
+static void migrate_page_states(struct page *newpage, struct page *page)
+{
+	folio_migrate_flags(page_folio(newpage), page_folio(page));
+}
+
+static void migrate_page_copy(struct page *newpage, struct page *page)
+{
+  folio_migrate_copy(page_folio(newpage), page_folio(page));
+}
+//------- JAR 3 funcs above
+
 static int btrfs_migratepage(struct address_space *mapping,
 			     struct page *newpage, struct page *page,
 			     enum migrate_mode mode)
@@ -11312,6 +11341,19 @@ void btrfs_update_inode_bytes(struct btrfs_inode *inode,
 		inode_add_bytes(&inode->vfs_inode, add_bytes);
 	spin_unlock(&inode->lock);
 }
+// JAR - 
+static int btrfs_read_folio(struct file *file, struct folio *folio)
+{
+  return btrfs_readpage(file, &folio->page);
+}
+
+static int btrfs_migrate_folio(struct address_space *mapping,
+			     struct folio *dst, struct folio *src,
+			     enum migrate_mode mode)
+{
+  return btrfs_migratepage(mapping, &dst->page, &src->page, mode);
+}
+// JAR --- added above 2 funcs
 
 static const struct inode_operations btrfs_dir_inode_operations = {
 	.getattr	= btrfs_getattr,
@@ -11361,15 +11403,18 @@ static const struct file_operations btrfs_dir_file_operations = {
  * For now we're avoiding this by dropping bmap.
  */
 static const struct address_space_operations btrfs_aops = {
-	.readpage	= btrfs_readpage,
+  // JAR .readpage	= btrfs_readpage,
+  .read_folio	= btrfs_read_folio,
 	.writepage	= btrfs_writepage,
 	.writepages	= btrfs_writepages,
 	.readahead	= btrfs_readahead,
 	.direct_IO	= noop_direct_IO,
 	.invalidate_folio = btrfs_invalidate_folio,
-	.releasepage	= btrfs_releasepage,
+	// JAR .releasepage	= btrfs_releasepage,
+	.release_folio	= btrfs_release_folio,
 #ifdef CONFIG_MIGRATION
-	.migratepage	= btrfs_migratepage,
+	// JAR - .migratepage	= btrfs_migratepage,
+	.migrate_folio	= btrfs_migrate_folio,
 #endif
 	.dirty_folio	= filemap_dirty_folio,
 	.error_remove_page = generic_error_remove_page,
