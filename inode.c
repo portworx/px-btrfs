@@ -8841,7 +8841,7 @@ struct inode *btrfs_alloc_inode(struct super_block *sb)
 	struct btrfs_inode *ei;
 	struct inode *inode;
 
-	ei = alloc_inode_sb(sb, btrfs_inode_cachep, GFP_KERNEL);
+	ei = alloc_inode_sb(sb, btrfs_inode_cachep, GFP_KERNEL| __GFP_NOFAIL);
 	if (!ei)
 		return NULL;
 
@@ -10095,7 +10095,8 @@ static int btrfs_permission(struct user_namespace *mnt_userns,
 }
 
 static int btrfs_tmpfile(struct user_namespace *mnt_userns, struct inode *dir,
-			 struct dentry *dentry, umode_t mode)
+			 struct file *dentry, umode_t mode)
+			 // JAR struct dentry *dentry, umode_t mode)
 {
 	struct btrfs_fs_info *fs_info = btrfs_sb(dir->i_sb);
 	struct btrfs_trans_handle *trans;

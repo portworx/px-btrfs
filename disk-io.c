@@ -961,28 +961,7 @@ out_w_error:
 }
 
 #ifdef CONFIG_MIGRATION
-static int btree_migratepage(struct address_space *mapping,
-			struct page *newpage, struct page *page,
-			enum migrate_mode mode)
-{
-	/*
-	 * we can't safely write a btree page from here,
-	 * we haven't done the locking hook
-	 */
-	if (PageDirty(page))
-		return -EAGAIN;
-	/*
-	 * Buffers may be managed in a filesystem specific way.
-	 * We must have no buffers or drop them.
-	 */
-	if (page_has_private(page) &&
-	    !try_to_release_page(page, GFP_KERNEL))
-		return -EAGAIN;
-	
-	// JAR return migrate_page(mapping, newpage, page, mode);
-        return migrate_folio(mapping, page_folio(newpage), page_folio(page), mode);
-}
-// JAR
+// JAR -- added this function in place of 'static int btree_migratepage'
 static int btree_migrate_folio(struct address_space *mapping,
 		struct folio *dst, struct folio *src, enum migrate_mode mode)
 {
@@ -1027,7 +1006,7 @@ static int btree_writepages(struct address_space *mapping,
 	return btree_write_cache_pages(mapping, wbc);
 }
 
-// JAR 
+// JAR
 static bool btree_release_folio(struct folio *folio, gfp_t gfp_flags)
 {
 	if (folio_test_writeback(folio) || folio_test_dirty(folio))
@@ -4298,7 +4277,7 @@ static void write_dev_flush(struct btrfs_device *device)
 	if (!test_bit(QUEUE_FLAG_WC, &q->queue_flags))
 		return;
 #endif
-	
+
 	bio_reset(bio, device->bdev, REQ_OP_WRITE | REQ_SYNC | REQ_PREFLUSH);
 	bio->bi_end_io = btrfs_end_empty_barrier;
 	init_completion(&device->flush_wait);
@@ -4663,7 +4642,7 @@ static void warn_about_uncommitted_trans(struct btrfs_fs_info *fs_info)
 		list_del_init(&trans->list);
 
 		btrfs_put_transaction(trans);
-		//trace_btrfs_transaction_commit(fs_info);
+		//JAR -- trace_btrfs_transaction_commit(fs_info);
 	}
 	ASSERT(!found);
 }

@@ -3710,7 +3710,9 @@ static int btrfs_file_open(struct inode *inode, struct file *filp)
 {
 	int ret;
 
-	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
+	//JAR filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
+	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC | FMODE_BUF_WASYNC |
+		        FMODE_CAN_ODIRECT;
 
 	ret = fsverity_file_open(inode, filp);
 	if (ret)
@@ -3733,7 +3735,8 @@ static int check_direct_read(struct btrfs_fs_info *fs_info,
 
 	for (seg = 0; seg < iter->nr_segs; seg++)
 		for (i = seg + 1; i < iter->nr_segs; i++)
-			if (iter->iov[seg].iov_base == iter->iov[i].iov_base)
+		  // JAR if (iter->iov[seg].iov_base == iter->iov[i].iov_base)
+		  if (iter->__iov[seg].iov_base == iter->__iov[i].iov_base)
 				return -EINVAL;
 	return 0;
 }

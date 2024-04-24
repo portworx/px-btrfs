@@ -7,6 +7,8 @@
 #include <linux/wait.h>
 #include <linux/math64.h>
 #include <linux/rbtree.h>
+// JAR - added the below include
+#include <linux/fs.h>
 
 #define in_range(b, first, len) ((b) >= (first) && (b) < (first) + (len))
 
@@ -112,4 +114,7 @@ static inline struct rb_node *rb_simple_insert(struct rb_root *root, u64 bytenr,
 	return NULL;
 }
 
+// JAR - add declaration below                                                                                                                  
+unsigned find_get_pages_contig(struct address_space *mapping, pgoff_t index,
+                               unsigned int nr_pages, struct page **pages);
 #endif

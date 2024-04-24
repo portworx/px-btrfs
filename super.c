@@ -1714,11 +1714,13 @@ static struct dentry *btrfs_mount_root(struct file_system_type *fs_type,
 	struct btrfs_fs_devices *fs_devices = NULL;
 	struct btrfs_fs_info *fs_info = NULL;
 	void *new_sec_opts = NULL;
-	fmode_t mode = FMODE_READ;
+	// JAR fmode_t mode = FMODE_READ;
+	fmode_t mode = BLK_OPEN_READ; 
 	int error = 0;
 
 	if (!(flags & SB_RDONLY))
-		mode |= FMODE_WRITE;
+	  // JAR mode |= FMODE_WRITE;
+	  mode |=  BLK_OPEN_WRITE;
 
 	if (data) {
 		error = security_sb_eat_lsm_opts(data, &new_sec_opts);
@@ -2469,7 +2471,8 @@ static long btrfs_control_ioctl(struct file *file, unsigned int cmd,
 	switch (cmd) {
 	case BTRFS_IOC_SCAN_DEV:
 		mutex_lock(&uuid_mutex);
-		device = btrfs_scan_one_device(vol->name, FMODE_READ,
+		//JAR device = btrfs_scan_one_device(vol->name, FMODE_READ,
+		device = btrfs_scan_one_device(vol->name, BLK_OPEN_READ,
 					       &btrfs_root_fs_type);
 		ret = PTR_ERR_OR_ZERO(device);
 		mutex_unlock(&uuid_mutex);
@@ -2484,7 +2487,8 @@ static long btrfs_control_ioctl(struct file *file, unsigned int cmd,
 		break;
 	case BTRFS_IOC_DEVICES_READY:
 		mutex_lock(&uuid_mutex);
-		device = btrfs_scan_one_device(vol->name, FMODE_READ,
+		// JAR device = btrfs_scan_one_device(vol->name, FMODE_READ,
+		device = btrfs_scan_one_device(vol->name, BLK_OPEN_READ,
 					       &btrfs_root_fs_type);
 		if (IS_ERR(device)) {
 			mutex_unlock(&uuid_mutex);
