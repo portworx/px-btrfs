@@ -3590,9 +3590,10 @@ static long btrfs_ioctl_rm_dev_v2(struct file *file, void __user *arg)
 	}
 err_drop:
 	mnt_drop_write_file(file);
-	if (bdev)
+	// Sebas : blkdev_put is not present
+	// if (bdev)
 	  // JAR blkdev_put(bdev, mode);
-	  blkdev_put(bdev, holder);
+	  // blkdev_put(bdev, holder);
 out:
 	btrfs_put_dev_args_from_path(&args);
 	kfree(vol_args);
@@ -3643,9 +3644,10 @@ static long btrfs_ioctl_rm_dev(struct file *file, void __user *arg)
 	}
 
 	mnt_drop_write_file(file);
-	if (bdev)
+	// Sebas : blkdev_put is not present
+	// if (bdev)
 	  //blkdev_put(bdev, mode);
-	  blkdev_put(bdev, holder);
+	  // blkdev_put(bdev, holder);
 out:
 	btrfs_put_dev_args_from_path(&args);
 	kfree(vol_args);

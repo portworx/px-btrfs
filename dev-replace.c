@@ -245,6 +245,7 @@ static int btrfs_init_dev_replace_tgtdev(struct btrfs_fs_info *fs_info,
 {
 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
 	struct btrfs_device *device;
+	struct file *bdev_file;
 	struct block_device *bdev;
 	struct rcu_string *name;
 	u64 devid = BTRFS_DEV_REPLACE_DEVID;
@@ -256,14 +257,22 @@ static int btrfs_init_dev_replace_tgtdev(struct btrfs_fs_info *fs_info,
 		return -EINVAL;
 	}
 
+	// Sebas: blkdev_get_by_path is not present
+	bdev_file = bdev_file_open_by_path(device_path, BLK_OPEN_WRITE,
+					fs_info->bdev_holder, NULL);
+	if (IS_ERR(bdev_file)) {
+		btrfs_err(fs_info, "target device %s is invalid!", device_path);
+		return PTR_ERR(bdev_file);
+	}
+	bdev = file_bdev(bdev_file);
 	// JAR bdev = blkdev_get_by_path(device_path, FMODE_WRITE | FMODE_EXCL,
 	//			  fs_info->bdev_holder);
-	bdev = blkdev_get_by_path(device_path, BLK_OPEN_WRITE,
-				  fs_info->bdev_holder, NULL);
-	if (IS_ERR(bdev)) {
-		btrfs_err(fs_info, "target device %s is invalid!", device_path);
-		return PTR_ERR(bdev);
-	}
+	//bdev = blkdev_get_by_path(device_path, BLK_OPEN_WRITE,
+	//			  fs_info->bdev_holder, NULL);
+	//if (IS_ERR(bdev)) {
+	//	btrfs_err(fs_info, "target device %s is invalid!", device_path);
+	//	return PTR_ERR(bdev);
+	//}
 
 	if (!btrfs_check_device_zone_type(fs_info, bdev)) {
 		btrfs_err(fs_info,
@@ -342,8 +351,9 @@ static int btrfs_init_dev_replace_tgtdev(struct btrfs_fs_info *fs_info,
 	return 0;
 
 error:
+	// Sebas : blkdev_put is not present
 	// JAR blkdev_put(bdev, FMODE_EXCL);
-	blkdev_put(bdev, fs_info->bdev_holder);
+	// blkdev_put(bdev, fs_info->bdev_holder);
 	return ret;
 }
 

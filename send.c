@@ -4985,8 +4985,10 @@ static int put_file_data(struct send_ctx *sctx, u64 offset, u32 len)
 		}
 
 		if (PageReadahead(page)) {
+			// Sebas : convert a page to folio since the page_cache_async_readahead
+			// expects a folio
 			page_cache_async_readahead(inode->i_mapping, &sctx->ra,
-				NULL, page, index, last_index + 1 - index);
+				NULL, page_folio(page), index, last_index + 1 - index);
 		}
 
 		if (!PageUptodate(page)) {
