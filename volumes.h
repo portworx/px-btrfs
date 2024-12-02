@@ -65,6 +65,10 @@ struct btrfs_device {
 
 	u64 generation;
 
+	// Sebas: need bdev_file for cleanup in
+	// __btrfs_free_extra_devids and btrfs_close_bdev
+	// bdev_file is assigned in btrfs_init_new_device
+	struct file *bdev_file;
 	struct block_device *bdev;
 
 	struct btrfs_zoned_device_info *zone_info;

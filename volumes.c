@@ -1095,10 +1095,12 @@ static void __btrfs_free_extra_devids(struct btrfs_fs_devices *fs_devices,
 		if (device->devid == BTRFS_DEV_REPLACE_DEVID)
 			continue;
 
-		if (device->bdev) {
-		  // Sebas : blkdev_put doesn't exist
-		  // JAR blkdev_put(device->bdev, device->mode);
-		  // blkdev_put(device->bdev, device->holder);
+		if (device->bdev_file) {
+		    // Sebas : blkdev_put doesn't exist
+		    // JAR blkdev_put(device->bdev, device->mode);
+		    // blkdev_put(device->bdev, device->holder);
+		    fput(device->bdev_file);
+			device->bdev_file = NULL;
 			device->bdev = NULL;
 			fs_devices->open_devices--;
 		}
@@ -1145,7 +1147,10 @@ static void btrfs_close_bdev(struct btrfs_device *device)
 	}
 
 	// JAR blkdev_put(device->bdev, device->mode);
+	// Sebas : blkdev_put is not present, replace with fput
 	// blkdev_put(device->bdev, device->holder);
+	if (device->bdev_file)
+		fput(device->bdev_file);
 }
 
 static void btrfs_close_one_device(struct btrfs_device *device)
@@ -2722,6 +2727,8 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 	rcu_assign_pointer(device->name, name);
 
 	device->fs_info = fs_info;
+	// Sebas: initialize bdev_file, needed for cleanup
+	device->bdev_file = bdev_file;
 	device->bdev = bdev;
 	ret = lookup_bdev(device_path, &device->devt);
 	if (ret)
