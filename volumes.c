@@ -2079,31 +2079,6 @@ static u64 btrfs_num_devices(struct btrfs_fs_info *fs_info)
 	return num_devices;
 }
 
-#if 0
-// Sebas : added code for v6.8
-static void btrfs_scratch_superblock(struct btrfs_fs_info *fs_info,
-				     struct block_device *bdev, int copy_num)
-{
-	struct btrfs_super_block *disk_super;
-	const size_t len = sizeof(disk_super->magic);
-	const u64 bytenr = btrfs_sb_offset(copy_num);
-	int ret;
-
-	disk_super = btrfs_read_disk_super(bdev, bytenr, bytenr);
-	if (IS_ERR(disk_super))
-		return;
-
-	memset(&disk_super->magic, 0, len);
-	folio_mark_dirty(virt_to_folio(disk_super));
-	btrfs_release_disk_super(disk_super);
-
-	ret = sync_blockdev_range(bdev, bytenr, bytenr + len - 1);
-	if (ret)
-		btrfs_warn(fs_info, "error clearing superblock number %d (%d)",
-			copy_num, ret);
-}
-#endif
-
 void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 			       struct block_device *bdev,
 			       const char *device_path)
@@ -2157,32 +2132,6 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 	/* Update ctime/mtime for device path for libblkid */
 	update_dev_time(device_path);
 }
-#if 0
-// Sebas : impl from 6.8 kernel
-void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
-			       struct block_device *bdev,
-			       const char *device_path)
-{
-	int copy_num;
-
-	if (!bdev)
-		return;
-
-	for (copy_num = 0; copy_num < BTRFS_SUPER_MIRROR_MAX; copy_num++) {
-		// Sebas : refactor
-		if (bdev_is_zoned(bdev))
-			btrfs_reset_sb_log_zones(bdev, copy_num);
-		else
-			btrfs_scratch_superblock(fs_info, bdev, copy_num);
-	}
-
-	/* Notify udev that device has changed */
-	btrfs_kobject_uevent(bdev, KOBJ_CHANGE);
-
-	/* Update ctime/mtime for device path for libblkid */
-	update_dev_time(device_path);
-}
-#endif
 
 int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		    struct btrfs_dev_lookup_args *args,
