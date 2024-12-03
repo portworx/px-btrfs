@@ -2079,7 +2079,8 @@ static u64 btrfs_num_devices(struct btrfs_fs_info *fs_info)
 	return num_devices;
 }
 
-// Sebas : added code for refactor
+#if 0
+// Sebas : added code for v6.8
 static void btrfs_scratch_superblock(struct btrfs_fs_info *fs_info,
 				     struct block_device *bdev, int copy_num)
 {
@@ -2101,7 +2102,63 @@ static void btrfs_scratch_superblock(struct btrfs_fs_info *fs_info,
 		btrfs_warn(fs_info, "error clearing superblock number %d (%d)",
 			copy_num, ret);
 }
+#endif
 
+void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
+			       struct block_device *bdev,
+			       const char *device_path)
+{
+	struct btrfs_super_block *disk_super;
+	int copy_num;
+
+	if (!bdev)
+		return;
+
+	for (copy_num = 0; copy_num < BTRFS_SUPER_MIRROR_MAX; copy_num++) {
+		// Sebas: use folio instead of page
+		// struct page *page;
+		int ret;
+		// Sebas : added code for use in sync_blockdev_range
+		const size_t len = sizeof(disk_super->magic);
+		const u64 bytenr = btrfs_sb_offset(copy_num);
+
+		disk_super = btrfs_read_dev_one_super(bdev, copy_num);
+		if (IS_ERR(disk_super))
+			continue;
+
+		if (bdev_is_zoned(bdev)) {
+			btrfs_reset_sb_log_zones(bdev, copy_num);
+			continue;
+		}
+
+		memset(&disk_super->magic, 0, sizeof(disk_super->magic));
+
+		// Sebas : refactor from 6.8 kernel
+		// the idea is to try to change only the kernel APIs and
+		// not btrfs APIs
+		folio_mark_dirty(virt_to_folio(disk_super));
+		btrfs_release_disk_super(disk_super);
+		ret = sync_blockdev_range(bdev, bytenr, bytenr + len - 1);
+		// page = virt_to_page(disk_super);
+		// set_page_dirty(page);
+		// lock_page(page);
+		/* write_on_page() unlocks the page */
+		// ret = write_one_page(page);
+		if (ret)
+			btrfs_warn(fs_info,
+				"error clearing superblock number %d (%d)",
+				copy_num, ret);
+		// btrfs_release_disk_super(disk_super);
+	}
+
+	/* Notify udev that device has changed */
+	btrfs_kobject_uevent(bdev, KOBJ_CHANGE);
+
+	/* Update ctime/mtime for device path for libblkid */
+	update_dev_time(device_path);
+}
+#if 0
+// Sebas : impl from 6.8 kernel
 void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 			       struct block_device *bdev,
 			       const char *device_path)
@@ -2125,6 +2182,7 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 	/* Update ctime/mtime for device path for libblkid */
 	update_dev_time(device_path);
 }
+#endif
 
 int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		    struct btrfs_dev_lookup_args *args,
