@@ -351,6 +351,7 @@ static int btrfs_init_dev_replace_tgtdev(struct btrfs_fs_info *fs_info,
 	return 0;
 
 error:
+	fput(bdev_file);
 	// Sebas : blkdev_put is not present
 	// JAR blkdev_put(bdev, FMODE_EXCL);
 	// blkdev_put(bdev, fs_info->bdev_holder);

@@ -3535,8 +3535,10 @@ static long btrfs_ioctl_rm_dev_v2(struct file *file, void __user *arg)
 	struct inode *inode = file_inode(file);
 	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
 	struct btrfs_ioctl_vol_args_v2 *vol_args;
-	struct block_device *bdev = NULL;
-	fmode_t mode;
+	// Sebas : use bdev_file
+	struct file *bdev_file = NULL;
+	// struct block_device *bdev = NULL;
+	// fmode_t mode;
 	// JAR -- added void *holder;
 	void *holder;
 	int ret;
@@ -3576,7 +3578,7 @@ static long btrfs_ioctl_rm_dev_v2(struct file *file, void __user *arg)
 
 	/* Exclusive operation is now claimed */
 	// JAR -- added &holder
-	ret = btrfs_rm_device(fs_info, &args, &bdev, &mode, &holder);
+	ret = btrfs_rm_device(fs_info, &args, &bdev_file, &holder);
 
 	btrfs_exclop_finish(fs_info);
 
@@ -3594,6 +3596,8 @@ err_drop:
 	// if (bdev)
 	  // JAR blkdev_put(bdev, mode);
 	  // blkdev_put(bdev, holder);
+	if (bdev_file != NULL)
+		fput(bdev_file);
 out:
 	btrfs_put_dev_args_from_path(&args);
 	kfree(vol_args);
@@ -3606,10 +3610,12 @@ static long btrfs_ioctl_rm_dev(struct file *file, void __user *arg)
 	struct inode *inode = file_inode(file);
 	struct btrfs_fs_info *fs_info = btrfs_sb(inode->i_sb);
 	struct btrfs_ioctl_vol_args *vol_args;
-	struct block_device *bdev = NULL;
+	// sebas : use bdev_file
+	struct file* bdev_file = NULL;
+	// struct block_device *bdev = NULL;
 	// JAR -- added below
 	void *holder;
-	fmode_t mode;
+	// fmode_t mode;
 	int ret;
 	bool cancel = false;
 
@@ -3637,7 +3643,8 @@ static long btrfs_ioctl_rm_dev(struct file *file, void __user *arg)
 					   cancel);
 	if (ret == 0) {
 	  // JAR -- added &holder
-	  ret = btrfs_rm_device(fs_info, &args, &bdev, &mode, &holder);
+	  // Sebas: use bdev_file
+	  ret = btrfs_rm_device(fs_info, &args, &bdev_file, &holder);
 		if (!ret)
 			btrfs_info(fs_info, "disk deleted %s", vol_args->name);
 		btrfs_exclop_finish(fs_info);
@@ -3648,6 +3655,8 @@ static long btrfs_ioctl_rm_dev(struct file *file, void __user *arg)
 	// if (bdev)
 	  //blkdev_put(bdev, mode);
 	  // blkdev_put(bdev, holder);
+	if (bdev_file != NULL)
+		fput(bdev_file);
 out:
 	btrfs_put_dev_args_from_path(&args);
 	kfree(vol_args);

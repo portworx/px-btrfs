@@ -2186,7 +2186,7 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 
 int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		    struct btrfs_dev_lookup_args *args,
-		    struct block_device **bdev, fmode_t *mode, void **holder)
+		    struct file **bdev_file, void **holder)
 {
 	struct btrfs_trans_handle *trans;
 	struct btrfs_device *device;
@@ -2324,8 +2324,11 @@ int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		}
 	}
 
-	*bdev = device->bdev;
-	*mode = device->mode;
+	// Sebas: need only the bdev_file
+	// for cleanup in the caller
+	//*bdev = device->bdev;
+	//*mode = device->mode;
+	*bdev_file = device->bdev_file;
 	// JAR -- added below
 	*holder = device->holder;
 	synchronize_rcu();
