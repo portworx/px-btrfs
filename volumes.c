@@ -685,6 +685,8 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 		fs_devices->rotating = true;
 
 	device->bdev = bdev;
+	// Sebas: add for proper cleanup during unmount
+	device->bdev_file = bdev_file;
 	clear_bit(BTRFS_DEV_STATE_IN_FS_METADATA, &device->dev_state);
 	device->mode = flags;
 	// JAR -- Added below
