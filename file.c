@@ -1593,8 +1593,9 @@ static int btrfs_write_check(struct kiocb *iocb, struct iov_iter *from,
 		if (nocow_bytes < count)
 			return -EAGAIN;
 	}
-
-	current->backing_dev_info = inode_to_bdi(inode);
+	// Sebas: nothing can be done here other than commenting out the code
+	// since task_struct can't be modified
+	// current->backing_dev_info = inode_to_bdi(inode);
 	ret = file_remove_privs(file);
 	if (ret)
 		return ret;
@@ -1615,7 +1616,9 @@ static int btrfs_write_check(struct kiocb *iocb, struct iov_iter *from,
 
 		ret = btrfs_cont_expand(BTRFS_I(inode), oldsize, end_pos);
 		if (ret) {
-			current->backing_dev_info = NULL;
+			// Sebas: nothing can be done here other than commenting out the code
+			// since task_struct can't be modified
+			// current->backing_dev_info = NULL;
 			return ret;
 		}
 	}
@@ -2112,7 +2115,9 @@ ssize_t btrfs_do_write_iter(struct kiocb *iocb, struct iov_iter *from,
 	if (sync)
 		atomic_dec(&inode->sync_writers);
 
-	current->backing_dev_info = NULL;
+	// Sebas: nothing can be done here other than commenting out the code
+	// since task_struct can't be modified
+	// current->backing_dev_info = NULL;
 	return num_written;
 }
 

@@ -775,6 +775,10 @@ again:
 	return page;
 }
 
+// Sebas: commented out this version because
+// the last arg is log_blocksize and expected
+// arg type is unsigned int
+#if 0
 /*
  * fsverity op that writes a Merkle tree block into the btree.
  *
@@ -802,6 +806,34 @@ static int btrfs_write_merkle_tree_block(struct inode *inode, const void *buf,
 
 	return write_key_bytes(BTRFS_I(inode), BTRFS_VERITY_MERKLE_ITEM_KEY,
 			       off, buf, len);
+}
+#endif
+
+// Sebas: this version seems to match the function decl
+//     int (*write_merkle_tree_block)(struct inode *inode, const void *buf,
+//                       u64 pos, unsigned int size);
+/*
+ * fsverity op that writes a Merkle tree block into the btree.
+ *
+ * @inode:	inode to write a Merkle tree block for
+ * @buf:	Merkle tree block to write
+ * @pos:	the position of the block in the Merkle tree (in bytes)
+ * @size:	the Merkle tree block size (in bytes)
+ *
+ * Returns 0 on success or negative error code on failure
+ */
+static int btrfs_write_merkle_tree_block(struct inode *inode, const void *buf,
+					 u64 pos, unsigned int size)
+{
+	loff_t merkle_pos = merkle_file_pos(inode);
+
+	if (merkle_pos < 0)
+		return merkle_pos;
+	if (merkle_pos > inode->i_sb->s_maxbytes - pos - size)
+		return -EFBIG;
+
+	return write_key_bytes(BTRFS_I(inode), BTRFS_VERITY_MERKLE_ITEM_KEY,
+			       pos, buf, size);
 }
 
 const struct fsverity_operations btrfs_verityops = {

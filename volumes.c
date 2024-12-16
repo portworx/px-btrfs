@@ -505,27 +505,50 @@ static struct btrfs_fs_devices *find_fsid_with_metadata_uuid(
 }
 
 
+// Sebas - blkdev_get_by_path is not present, so the only thing we can
+// do is to get the bdev_file and then get the struct block_device* from it
+// but to get the bdev_file requires a blk_mode_t flags, so ideally need to convert
+// fmode_t to blk_mode_t but it might not be necessary
+// The callers of btrfs_get_bdev_and_sb are
+// btrfs_get_dev_args_from_path and btrfs_open_one_device
+//
+// btrfs_get_dev_args_from_path calls btrfs_get_bdev_and_sb with BLK_OPEN_READ
+//
+// open_seed_devices calls open_fs_devices with BLK_OPEN_READ which in turn calls btrfs_open_one_device
+//
+// btrfs_mount_root calls btrfs_open_devices (can have BLK_OPEN_READ | BLK_OPEN_WRITE) which in turn calls
+// open_fs_devices and it calls btrfs_open_one_device
+//
+// the point is : the only flags here is BLK_OPEN_READ and BLK_OPEN_WRITE
+// which has the same value as FMODE_READ and FMODE_WRITE and so blk_mode_t flags
+// can be used interchangeably with fmode_t here
+//
 static int
 btrfs_get_bdev_and_sb(const char *device_path, fmode_t flags, void *holder,
-		      int flush, struct block_device **bdev,
+		      int flush, struct block_device **bdev, struct file** bdev_file,
 		      struct btrfs_super_block **disk_super)
 {
 	int ret;
 
-	// JAR *bdev = blkdev_get_by_path(device_path, flags, holder);
-	*bdev = blkdev_get_by_path(device_path, flags, holder, NULL);
-
-	if (IS_ERR(*bdev)) {
-		ret = PTR_ERR(*bdev);
+	*bdev_file = bdev_file_open_by_path(device_path, flags, holder, NULL);
+	if (IS_ERR(*bdev_file)) {
+		ret = PTR_ERR(*bdev_file);
 		goto error;
 	}
+	*bdev = file_bdev(*bdev_file);
+
+	// JAR *bdev = blkdev_get_by_path(device_path, flags, holder);
+	// Sebas : the below API doesn't exist
+    // *bdev = blkdev_get_by_path(device_path, flags, holder, NULL);
 
 	if (flush)
 		sync_blockdev(*bdev);
 	ret = set_blocksize(*bdev, BTRFS_BDEV_BLOCKSIZE);
 	if (ret) {
-	  // JAR blkdev_put(*bdev, flags);
-	  blkdev_put(*bdev, holder);
+	    // JAR blkdev_put(*bdev, flags);
+	    // Sebas : the below API doesn't exist
+	    // blkdev_put(*bdev, holder);
+	    fput(*bdev_file);
 		goto error;
 	}
 	invalidate_bdev(*bdev);
@@ -533,14 +556,17 @@ btrfs_get_bdev_and_sb(const char *device_path, fmode_t flags, void *holder,
 	if (IS_ERR(*disk_super)) {
 		ret = PTR_ERR(*disk_super);
 		// JAR blkdev_put(*bdev, flags);
-		blkdev_put(*bdev, holder);
+		// blkdev_put(*bdev, holder);
+		fput(*bdev_file);
 		goto error;
 	}
 
 	return 0;
 
 error:
+	*disk_super = NULL;
 	*bdev = NULL;
+	*bdev_file = NULL;
 	return ret;
 }
 
@@ -616,6 +642,8 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 	struct btrfs_super_block *disk_super;
 	u64 devid;
 	int ret;
+	// Sebas : added this
+	struct file* bdev_file;
 
 	if (device->bdev)
 		return -EINVAL;
@@ -623,7 +651,7 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 		return -EINVAL;
 
 	ret = btrfs_get_bdev_and_sb(device->name->str, flags, holder, 1,
-				    &bdev, &disk_super);
+				    &bdev, &bdev_file, &disk_super);
 	if (ret)
 		return ret;
 
@@ -657,6 +685,8 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 		fs_devices->rotating = true;
 
 	device->bdev = bdev;
+	// Sebas: add for proper cleanup during unmount
+	device->bdev_file = bdev_file;
 	clear_bit(BTRFS_DEV_STATE_IN_FS_METADATA, &device->dev_state);
 	device->mode = flags;
 	// JAR -- Added below
@@ -674,8 +704,10 @@ static int btrfs_open_one_device(struct btrfs_fs_devices *fs_devices,
 
 error_free_page:
 	btrfs_release_disk_super(disk_super);
+	// Sebas : blkdev_put doesn't exist
 	// JAR blkdev_put(bdev, flags);
-	blkdev_put(bdev, holder);
+	// blkdev_put(bdev, holder);
+	fput(bdev_file);
 
 	return -EINVAL;
 }
@@ -1065,9 +1097,12 @@ static void __btrfs_free_extra_devids(struct btrfs_fs_devices *fs_devices,
 		if (device->devid == BTRFS_DEV_REPLACE_DEVID)
 			continue;
 
-		if (device->bdev) {
-		  // JAR blkdev_put(device->bdev, device->mode);
-		  blkdev_put(device->bdev, device->holder);
+		if (device->bdev_file) {
+		    // Sebas : blkdev_put doesn't exist
+		    // JAR blkdev_put(device->bdev, device->mode);
+		    // blkdev_put(device->bdev, device->holder);
+		    fput(device->bdev_file);
+			device->bdev_file = NULL;
 			device->bdev = NULL;
 			fs_devices->open_devices--;
 		}
@@ -1114,7 +1149,10 @@ static void btrfs_close_bdev(struct btrfs_device *device)
 	}
 
 	// JAR blkdev_put(device->bdev, device->mode);
-	blkdev_put(device->bdev, device->holder);
+	// Sebas : blkdev_put is not present, replace with fput
+	// blkdev_put(device->bdev, device->holder);
+	if (device->bdev_file)
+		fput(device->bdev_file);
 }
 
 static void btrfs_close_one_device(struct btrfs_device *device)
@@ -1355,6 +1393,10 @@ struct btrfs_device *btrfs_scan_one_device(const char *path, fmode_t flags,
 	struct block_device *bdev;
 	u64 bytenr, bytenr_orig;
 	int ret;
+	// Sebas : blkdev_get_by_path is not present
+	// need to use bdev_file_open_by_path which
+	// returns a bdev_file
+	struct file *bdev_file;
 
 	lockdep_assert_held(&uuid_mutex);
 
@@ -1367,10 +1409,16 @@ struct btrfs_device *btrfs_scan_one_device(const char *path, fmode_t flags,
 	// JAR flags |= FMODE_EXCL;
 
 	// JAR bdev = blkdev_get_by_path(path, flags, holder);
-	bdev = blkdev_get_by_path(path, flags, NULL, NULL);
-	if (IS_ERR(bdev))
-		return ERR_CAST(bdev);
+	// Sebas : blkdev_get_by_path not present
+	// bdev = blkdev_get_by_path(path, flags, NULL, NULL);
+	// if (IS_ERR(bdev))
+	//	return ERR_CAST(bdev);
+	bdev_file =  bdev_file_open_by_path(path, flags, NULL, NULL);
+	if (IS_ERR(bdev_file))
+		return ERR_CAST(bdev_file);
 
+	// Sebas : get block_device* from bdev_file
+	bdev = file_bdev(bdev_file);
 	bytenr_orig = btrfs_sb_offset(0);
 	ret = btrfs_sb_log_location_bdev(bdev, 0, READ, &bytenr);
 	if (ret) {
@@ -1392,7 +1440,9 @@ struct btrfs_device *btrfs_scan_one_device(const char *path, fmode_t flags,
 
 error_bdev_put:
 	// JAR blkdev_put(bdev, flags);
-	blkdev_put(bdev, NULL);
+	// blkdev_put(bdev, NULL);
+	// Sebas : fput on error
+	fput(bdev_file);
 	return device;
 }
 
@@ -2042,8 +2092,12 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 		return;
 
 	for (copy_num = 0; copy_num < BTRFS_SUPER_MIRROR_MAX; copy_num++) {
-		struct page *page;
+		// Sebas: use folio instead of page
+		// struct page *page;
 		int ret;
+		// Sebas : added code for use in sync_blockdev_range
+		const size_t len = sizeof(disk_super->magic);
+		const u64 bytenr = btrfs_sb_offset(copy_num);
 
 		disk_super = btrfs_read_dev_one_super(bdev, copy_num);
 		if (IS_ERR(disk_super))
@@ -2056,17 +2110,22 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 
 		memset(&disk_super->magic, 0, sizeof(disk_super->magic));
 
-		page = virt_to_page(disk_super);
-		set_page_dirty(page);
-		lock_page(page);
+		// Sebas : refactor from 6.8 kernel
+		// the idea is to try to change only the kernel APIs and
+		// not btrfs APIs
+		folio_mark_dirty(virt_to_folio(disk_super));
+		btrfs_release_disk_super(disk_super);
+		ret = sync_blockdev_range(bdev, bytenr, bytenr + len - 1);
+		// page = virt_to_page(disk_super);
+		// set_page_dirty(page);
+		// lock_page(page);
 		/* write_on_page() unlocks the page */
-		ret = write_one_page(page);
+		// ret = write_one_page(page);
 		if (ret)
 			btrfs_warn(fs_info,
 				"error clearing superblock number %d (%d)",
 				copy_num, ret);
-		btrfs_release_disk_super(disk_super);
-
+		// btrfs_release_disk_super(disk_super);
 	}
 
 	/* Notify udev that device has changed */
@@ -2078,7 +2137,7 @@ void btrfs_scratch_superblocks(struct btrfs_fs_info *fs_info,
 
 int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		    struct btrfs_dev_lookup_args *args,
-		    struct block_device **bdev, fmode_t *mode, void **holder)
+		    struct file **bdev_file, void **holder)
 {
 	struct btrfs_trans_handle *trans;
 	struct btrfs_device *device;
@@ -2216,8 +2275,11 @@ int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		}
 	}
 
-	*bdev = device->bdev;
-	*mode = device->mode;
+	// Sebas: need only the bdev_file
+	// for cleanup in the caller
+	//*bdev = device->bdev;
+	//*mode = device->mode;
+	*bdev_file = device->bdev_file;
 	// JAR -- added below
 	*holder = device->holder;
 	synchronize_rcu();
@@ -2357,6 +2419,7 @@ int btrfs_get_dev_args_from_path(struct btrfs_fs_info *fs_info,
 {
 	struct btrfs_super_block *disk_super;
 	struct block_device *bdev;
+	struct file* bdev_file;
 	int ret;
 
 	if (!path || !path[0])
@@ -2375,7 +2438,7 @@ int btrfs_get_dev_args_from_path(struct btrfs_fs_info *fs_info,
 
 	// JAR ret = btrfs_get_bdev_and_sb(path, FMODE_READ, fs_info->bdev_holder, 0,
 	ret = btrfs_get_bdev_and_sb(path,  BLK_OPEN_READ, fs_info->bdev_holder, 0,
-				    &bdev, &disk_super);
+				    &bdev, &bdev_file, &disk_super);
 	if (ret)
 		return ret;
 	args->devid = btrfs_stack_device_id(&disk_super->dev_item);
@@ -2385,8 +2448,10 @@ int btrfs_get_dev_args_from_path(struct btrfs_fs_info *fs_info,
 	else
 		memcpy(args->fsid, disk_super->fsid, BTRFS_FSID_SIZE);
 	btrfs_release_disk_super(disk_super);
+	// Sebas : blkdev_put is not present
 	// JAR blkdev_put(bdev, FMODE_READ);
-	blkdev_put(bdev, NULL);
+	// blkdev_put(bdev, NULL);
+	fput(bdev_file);
 	return 0;
 }
 
@@ -2607,6 +2672,7 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 	struct btrfs_trans_handle *trans;
 	struct btrfs_device *device;
 	struct block_device *bdev;
+	struct file* bdev_file;
 	struct super_block *sb = fs_info->sb;
 	struct rcu_string *name;
 	struct btrfs_fs_devices *fs_devices = fs_info->fs_devices;
@@ -2620,12 +2686,19 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 	if (sb_rdonly(sb) && !fs_devices->seeding)
 		return -EROFS;
 
+	bdev_file = bdev_file_open_by_path(device_path, BLK_OPEN_WRITE,
+					fs_info->bdev_holder, NULL);
+	if (IS_ERR(bdev_file))
+		return PTR_ERR(bdev_file);
+	bdev = file_bdev(bdev_file);
+
+	// Sebas : blkdev_get_by_path is not present
 	// JAR bdev = blkdev_get_by_path(device_path, FMODE_WRITE | FMODE_EXCL,
 	// 		  fs_info->bdev_holder);
-	bdev = blkdev_get_by_path(device_path, BLK_OPEN_WRITE,
-				  fs_info->bdev_holder, NULL);
-	if (IS_ERR(bdev))
-		return PTR_ERR(bdev);
+	// bdev = blkdev_get_by_path(device_path, BLK_OPEN_WRITE,
+	//			  fs_info->bdev_holder, NULL);
+	// if (IS_ERR(bdev))
+	//	return PTR_ERR(bdev);
 
 	if (!btrfs_check_device_zone_type(fs_info, bdev)) {
 		ret = -EINVAL;
@@ -2666,6 +2739,8 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 	rcu_assign_pointer(device->name, name);
 
 	device->fs_info = fs_info;
+	// Sebas: initialize bdev_file, needed for cleanup
+	device->bdev_file = bdev_file;
 	device->bdev = bdev;
 	ret = lookup_bdev(device_path, &device->devt);
 	if (ret)
@@ -2853,7 +2928,9 @@ error_free_device:
 	btrfs_free_device(device);
 error:
 	// JAR blkdev_put(bdev, FMODE_EXCL);
-	blkdev_put(bdev, fs_info->bdev_holder);
+	// Sebas : blkdev_put is not present
+	// blkdev_put(bdev, fs_info->bdev_holder);
+	fput(bdev_file);
 	if (locked) {
 		mutex_unlock(&uuid_mutex);
 		up_write(&sb->s_umount);

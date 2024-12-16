@@ -65,6 +65,10 @@ struct btrfs_device {
 
 	u64 generation;
 
+	// Sebas: need bdev_file for cleanup in
+	// __btrfs_free_extra_devids and btrfs_close_bdev
+	// bdev_file is assigned in btrfs_init_new_device
+	struct file *bdev_file;
 	struct block_device *bdev;
 
 	struct btrfs_zoned_device_info *zone_info;
@@ -535,7 +539,7 @@ void btrfs_put_dev_args_from_path(struct btrfs_dev_lookup_args *args);
 void btrfs_free_device(struct btrfs_device *device);
 int btrfs_rm_device(struct btrfs_fs_info *fs_info,
 		    struct btrfs_dev_lookup_args *args,
-		    struct block_device **bdev, fmode_t *mode, void **holder);
+		    struct file **bdev_file, void **holder);
 void __exit btrfs_cleanup_fs_uuids(void);
 int btrfs_num_copies(struct btrfs_fs_info *fs_info, u64 logical, u64 len);
 int btrfs_grow_device(struct btrfs_trans_handle *trans,

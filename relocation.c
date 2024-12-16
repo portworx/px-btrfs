@@ -2966,8 +2966,10 @@ static int relocate_one_page(struct inode *inode, struct file_ra_state *ra,
 	if (ret < 0)
 		goto release_page;
 
+	// Sebas: convert a page to a folio because page_cache_async_readahead
+	// expects a folio instead of a page
 	if (PageReadahead(page))
-		page_cache_async_readahead(inode->i_mapping, ra, NULL, page,
+		page_cache_async_readahead(inode->i_mapping, ra, NULL, page_folio(page),
 				   page_index, last_index + 1 - page_index);
 
 	if (!PageUptodate(page)) {

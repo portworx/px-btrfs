@@ -16,6 +16,37 @@
  */
 #define BTRFS_DEFAULT_RECLAIM_THRESH		75
 
+// Sebas - add missing functionality
+/*
+ * Zoned block device models (zoned limit).
+ *
+ * Note: This needs to be ordered from the least to the most severe
+ * restrictions for the inheritance in blk_stack_limits() to work.
+ */
+enum blk_zoned_model {
+	BLK_ZONED_NONE = 0,	/* Regular block device */
+	BLK_ZONED_HA,		/* Host-aware zoned block device */
+	BLK_ZONED_HM,		/* Host-managed zoned block device */
+};
+
+static inline enum blk_zoned_model
+blk_queue_zoned_model(struct request_queue *q)
+{
+	if (IS_ENABLED(CONFIG_BLK_DEV_ZONED))
+		return q->limits.zoned;
+	return BLK_ZONED_NONE;
+}
+
+static inline enum blk_zoned_model bdev_zoned_model(struct block_device *bdev)
+{
+	struct request_queue *q = bdev_get_queue(bdev);
+
+	if (q)
+		return blk_queue_zoned_model(q);
+
+	return BLK_ZONED_NONE;
+}
+
 struct btrfs_zoned_device_info {
 	/*
 	 * Number of zones, zone size and types of zones if bdev is a
