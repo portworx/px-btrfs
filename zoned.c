@@ -782,8 +782,7 @@ static int sb_log_location(struct block_device *bdev, struct blk_zone *zones,
 			ASSERT(sb_zone_is_full(reset));
 
 			ret = blkdev_zone_mgmt(bdev, REQ_OP_ZONE_RESET,
-					       reset->start, reset->len,
-					       GFP_NOFS);
+					       reset->start, reset->len);
 			if (ret)
 				return ret;
 
@@ -933,7 +932,7 @@ int btrfs_advance_sb_log(struct btrfs_device *device, int mirror)
 
 				ret = blkdev_zone_mgmt(device->bdev,
 						REQ_OP_ZONE_FINISH, zone->start,
-						zone->len, GFP_NOFS);
+						zone->len);
 				if (ret)
 					return ret;
 			}
@@ -968,7 +967,7 @@ int btrfs_reset_sb_log_zones(struct block_device *bdev, int mirror)
 
 	return blkdev_zone_mgmt(bdev, REQ_OP_ZONE_RESET,
 				zone_start_sector(sb_zone, bdev),
-				zone_sectors * BTRFS_NR_SB_LOG_ZONES, GFP_NOFS);
+				zone_sectors * BTRFS_NR_SB_LOG_ZONES);
 }
 
 /**
@@ -1083,8 +1082,7 @@ int btrfs_reset_device_zone(struct btrfs_device *device, u64 physical,
 
 	*bytes = 0;
 	ret = blkdev_zone_mgmt(device->bdev, REQ_OP_ZONE_RESET,
-			       physical >> SECTOR_SHIFT, length >> SECTOR_SHIFT,
-			       GFP_NOFS);
+			       physical >> SECTOR_SHIFT, length >> SECTOR_SHIFT);
 	if (ret)
 		return ret;
 
@@ -1949,8 +1947,7 @@ int btrfs_zone_finish(struct btrfs_block_group *block_group)
 
 		ret = blkdev_zone_mgmt(device->bdev, REQ_OP_ZONE_FINISH,
 				       physical >> SECTOR_SHIFT,
-				       device->zone_info->zone_size >> SECTOR_SHIFT,
-				       GFP_NOFS);
+				       device->zone_info->zone_size >> SECTOR_SHIFT);
 
 		if (ret)
 			return ret;
