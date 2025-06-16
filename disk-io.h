@@ -17,6 +17,8 @@
  */
 #define BTRFS_BDEV_BLOCKSIZE	(4096)
 
+#define REQ_BTRFS_CGROUP_PUNT			REQ_FS_PRIVATE
+
 enum btrfs_wq_endio_type {
 	BTRFS_WQ_ENDIO_DATA,
 	BTRFS_WQ_ENDIO_METADATA,
