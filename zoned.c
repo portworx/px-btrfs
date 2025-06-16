@@ -563,26 +563,12 @@ int btrfs_get_dev_zone_info(struct btrfs_device *device, bool populate_cache)
 
 	kfree(zones);
 
-	switch (bdev_zoned_model(bdev)) {
-	case BLK_ZONED_HM:
+	if (bdev_is_zoned(bdev)) {
 		model = "host-managed zoned";
 		emulated = "";
-		break;
-	case BLK_ZONED_HA:
-		model = "host-aware zoned";
-		emulated = "";
-		break;
-	case BLK_ZONED_NONE:
+	} else {
 		model = "regular";
 		emulated = "emulated ";
-		break;
-	default:
-		/* Just in case */
-		btrfs_err_in_rcu(fs_info, "zoned: unsupported model %d on %s",
-				 bdev_zoned_model(bdev),
-				 rcu_str_deref(device->name));
-		ret = -EOPNOTSUPP;
-		goto out_free_zone_info;
 	}
 
 	btrfs_info_in_rcu(fs_info,
@@ -594,9 +580,7 @@ int btrfs_get_dev_zone_info(struct btrfs_device *device, bool populate_cache)
 
 out:
 	kfree(zones);
-out_free_zone_info:
 	btrfs_destroy_dev_zone_info(device);
-
 	return ret;
 }
 
