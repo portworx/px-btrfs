@@ -308,6 +308,12 @@ int btrfs_repair_one_sector(struct inode *inode,
 			    u64 start, int failed_mirror,
 			    submit_bio_hook_t *submit_bio_hook);
 
+void folio_account_redirty(struct folio *folio);
+static inline void account_page_redirty(struct page *page)
+{
+       folio_account_redirty(page_folio(page));
+}
+
 #ifdef CONFIG_BTRFS_FS_RUN_SANITY_TESTS
 bool find_lock_delalloc_range(struct inode *inode,
 			     struct page *locked_page, u64 *start,

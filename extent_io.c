@@ -7529,3 +7529,33 @@ void btrfs_readahead_node_child(struct extent_buffer *node, int slot)
 				   btrfs_node_ptr_generation(node, slot),
 				   btrfs_header_level(node) - 1);
 }
+
+/**
+ * folio_account_redirty - Manually account for redirtying a page.
+ * @folio: The folio which is being redirtied.
+ *
+ * Most filesystems should call folio_redirty_for_writepage() instead
+ * of this fuction.  If your filesystem is doing writeback outside the
+ * context of a writeback_control(), it can call this when redirtying
+ * a folio, to de-account the dirty counters (NR_DIRTIED, WB_DIRTIED,
+ * tsk->nr_dirtied), so that they match the written counters (NR_WRITTEN,
+ * WB_WRITTEN) in long term. The mismatches will lead to systematic errors
+ * in balanced_dirty_ratelimit and the dirty pages position control.
+ */
+void folio_account_redirty(struct folio *folio)
+{
+       struct address_space *mapping = folio->mapping;
+
+       if (mapping && mapping_can_writeback(mapping)) {
+               struct inode *inode = mapping->host;
+               struct bdi_writeback *wb;
+               struct wb_lock_cookie cookie = {};
+               long nr = folio_nr_pages(folio);
+
+               wb = unlocked_inode_to_wb_begin(inode, &cookie);
+               current->nr_dirtied -= nr;
+               node_stat_mod_folio(folio, NR_DIRTIED, -nr);
+               wb_stat_mod(wb, WB_DIRTIED, -nr);
+               unlocked_inode_to_wb_end(inode, &cookie);
+       }
+}
