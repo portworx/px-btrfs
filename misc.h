@@ -10,7 +10,9 @@
 // JAR - added the below include
 #include <linux/fs.h>
 
+#ifndef in_range
 #define in_range(b, first, len) ((b) >= (first) && (b) < (first) + (len))
+#endif
 
 static inline void cond_wake_up(struct wait_queue_head *wq)
 {
