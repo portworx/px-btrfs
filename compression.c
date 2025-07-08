@@ -559,7 +559,7 @@ blk_status_t btrfs_submit_compressed_write(struct btrfs_inode *inode, u64 start,
 				goto finish_cb;
 			}
 			if (blkcg_css)
-				bio->bi_opf |= REQ_CGROUP_PUNT;
+				bio->bi_opf |= REQ_BTRFS_CGROUP_PUNT;
 		}
 		/*
 		 * We should never reach next_stripe_start start as we will

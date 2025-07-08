@@ -830,10 +830,10 @@ static void run_one_async_done(struct btrfs_work *work)
 
 	/*
 	 * All of the bios that pass through here are from async helpers.
-	 * Use REQ_CGROUP_PUNT to issue them from the owning cgroup's context.
-	 * This changes nothing when cgroups aren't in use.
+	 * Use REQ_BTRFS_CGROUP_PUNT to issue them from the owning cgroup's
+	 * context. This changes nothing when cgroups aren't in use.
 	 */
-	async->bio->bi_opf |= REQ_CGROUP_PUNT;
+	async->bio->bi_opf |= REQ_BTRFS_CGROUP_PUNT;
 	ret = btrfs_map_bio(btrfs_sb(inode->i_sb), async->bio, async->mirror_num);
 	if (ret) {
 		async->bio->bi_status = ret;
@@ -4273,8 +4273,7 @@ static void write_dev_flush(struct btrfs_device *device)
 	 * of simplicity, since this is a debug tool and not meant for use in
 	 * non-debug builds.
 	 */
-	struct request_queue *q = bdev_get_queue(device->bdev);
-	if (!test_bit(QUEUE_FLAG_WC, &q->queue_flags))
+	if (!bdev_write_cache(device->bdev))
 		return;
 #endif
 
