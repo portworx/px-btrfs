@@ -15,7 +15,8 @@ int __init extent_map_init(void)
 {
 	extent_map_cache = kmem_cache_create("btrfs_extent_map",
 			sizeof(struct extent_map), 0,
-			SLAB_MEM_SPREAD, NULL);
+			0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+			NULL);
 	if (!extent_map_cache)
 		return -ENOMEM;
 	return 0;

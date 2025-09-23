@@ -152,7 +152,7 @@ int __init btrfs_prelim_ref_init(void)
 	btrfs_prelim_ref_cache = kmem_cache_create("btrfs_prelim_ref",
 					sizeof(struct prelim_ref),
 					0,
-					SLAB_MEM_SPREAD,
+					0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
 					NULL);
 	if (!btrfs_prelim_ref_cache)
 		return -ENOMEM;

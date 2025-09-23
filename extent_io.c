@@ -225,7 +225,8 @@ int __init extent_state_cache_init(void)
 {
 	extent_state_cache = kmem_cache_create("btrfs_extent_state",
 			sizeof(struct extent_state), 0,
-			SLAB_MEM_SPREAD, NULL);
+			0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+			NULL);
 	if (!extent_state_cache)
 		return -ENOMEM;
 	return 0;
@@ -235,7 +236,8 @@ int __init extent_io_init(void)
 {
 	extent_buffer_cache = kmem_cache_create("btrfs_extent_buffer",
 			sizeof(struct extent_buffer), 0,
-			SLAB_MEM_SPREAD, NULL);
+			0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+			NULL);
 	if (!extent_buffer_cache)
 		return -ENOMEM;
 

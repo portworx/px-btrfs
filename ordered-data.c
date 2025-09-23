@@ -1091,7 +1091,7 @@ int __init ordered_data_init(void)
 {
 	btrfs_ordered_extent_cache = kmem_cache_create("btrfs_ordered_extent",
 				     sizeof(struct btrfs_ordered_extent), 0,
-				     SLAB_MEM_SPREAD,
+				     0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
 				     NULL);
 	if (!btrfs_ordered_extent_cache)
 		return -ENOMEM;

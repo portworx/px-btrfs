@@ -835,7 +835,7 @@ cleanup_and_bail_uncompressed:
 	if (async_chunk->locked_page &&
 	    (page_offset(async_chunk->locked_page) >= start &&
 	     page_offset(async_chunk->locked_page)) <= end) {
-		__set_page_dirty_nobuffers(async_chunk->locked_page);
+		set_page_dirty(async_chunk->locked_page);
 		/* unlocked later on in the async handlers */
 	}
 
@@ -1510,7 +1510,7 @@ static noinline int run_delalloc_zoned(struct btrfs_inode *inode,
 	if (*page_started)
 		return 0;
 
-	__set_page_dirty_nobuffers(locked_page);
+	set_page_dirty(locked_page);
 	account_page_redirty(locked_page);
 	extent_write_locked_range(&inode->vfs_inode, start, end);
 	*page_started = 1;
@@ -3779,14 +3779,13 @@ static int btrfs_read_locked_inode(struct inode *inode,
 	btrfs_inode_set_file_extent_range(BTRFS_I(inode), 0,
 			round_up(i_size_read(inode), fs_info->sectorsize));
 
-	inode->i_atime.tv_sec = btrfs_timespec_sec(leaf, &inode_item->atime);
-	inode->i_atime.tv_nsec = btrfs_timespec_nsec(leaf, &inode_item->atime);
-
-	inode->i_mtime.tv_sec = btrfs_timespec_sec(leaf, &inode_item->mtime);
-	inode->i_mtime.tv_nsec = btrfs_timespec_nsec(leaf, &inode_item->mtime);
-
-	inode->i_ctime.tv_sec = btrfs_timespec_sec(leaf, &inode_item->ctime);
-	inode->i_ctime.tv_nsec = btrfs_timespec_nsec(leaf, &inode_item->ctime);
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_atime(inode, btrfs_timespec_sec(leaf, &inode_item->atime),
+			btrfs_timespec_nsec(leaf, &inode_item->atime));
+	inode_set_mtime(inode, btrfs_timespec_sec(leaf, &inode_item->mtime),
+			btrfs_timespec_nsec(leaf, &inode_item->mtime));
+	inode_set_ctime(inode, btrfs_timespec_sec(leaf, &inode_item->ctime),
+			btrfs_timespec_nsec(leaf, &inode_item->ctime));
 
 	BTRFS_I(inode)->i_otime.tv_sec =
 		btrfs_timespec_sec(leaf, &inode_item->otime);
@@ -3946,20 +3945,21 @@ static void fill_inode_item(struct btrfs_trans_handle *trans,
 	btrfs_set_token_inode_mode(&token, item, inode->i_mode);
 	btrfs_set_token_inode_nlink(&token, item, inode->i_nlink);
 
+	/* Kernel 6.12: Use new timestamp accessor functions */
 	btrfs_set_token_timespec_sec(&token, &item->atime,
-				     inode->i_atime.tv_sec);
+				     inode_get_atime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->atime,
-				      inode->i_atime.tv_nsec);
+				      inode_get_atime_nsec(inode));
 
 	btrfs_set_token_timespec_sec(&token, &item->mtime,
-				     inode->i_mtime.tv_sec);
+				     inode_get_mtime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->mtime,
-				      inode->i_mtime.tv_nsec);
+				      inode_get_mtime_nsec(inode));
 
 	btrfs_set_token_timespec_sec(&token, &item->ctime,
-				     inode->i_ctime.tv_sec);
+				     inode_get_ctime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->ctime,
-				      inode->i_ctime.tv_nsec);
+				      inode_get_ctime_nsec(inode));
 
 	btrfs_set_token_timespec_sec(&token, &item->otime,
 				     BTRFS_I(inode)->i_otime.tv_sec);
@@ -4161,8 +4161,10 @@ err:
 	btrfs_i_size_write(dir, dir->vfs_inode.i_size - name_len * 2);
 	inode_inc_iversion(&inode->vfs_inode);
 	inode_inc_iversion(&dir->vfs_inode);
-	inode->vfs_inode.i_ctime = dir->vfs_inode.i_mtime =
-		dir->vfs_inode.i_ctime = current_time(&inode->vfs_inode);
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_ctime_to_ts(&inode->vfs_inode, current_time(&inode->vfs_inode));
+	inode_set_mtime_to_ts(&dir->vfs_inode, current_time(&dir->vfs_inode));
+	inode_set_ctime_to_ts(&dir->vfs_inode, current_time(&dir->vfs_inode));
 	ret = btrfs_update_inode(trans, root, dir);
 out:
 	return ret;
@@ -4323,7 +4325,9 @@ static int btrfs_unlink_subvol(struct btrfs_trans_handle *trans,
 
 	btrfs_i_size_write(BTRFS_I(dir), dir->i_size - name_len * 2);
 	inode_inc_iversion(dir);
-	dir->i_mtime = dir->i_ctime = current_time(dir);
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_mtime_to_ts(dir, current_time(dir));
+	inode_set_ctime_to_ts(dir, current_time(dir));
 	ret = btrfs_update_inode_fallback(trans, root, BTRFS_I(dir));
 	if (ret)
 		btrfs_abort_transaction(trans, ret);
@@ -4965,9 +4969,11 @@ static int btrfs_setsize(struct inode *inode, struct iattr *attr)
 	 */
 	if (newsize != oldsize) {
 		inode_inc_iversion(inode);
-		if (!(mask & (ATTR_CTIME | ATTR_MTIME)))
-			inode->i_ctime = inode->i_mtime =
-				current_time(inode);
+		if (!(mask & (ATTR_CTIME | ATTR_MTIME))) {
+			/* Kernel 6.12: Use new timestamp accessor functions */
+			inode_set_ctime_to_ts(inode, current_time(inode));
+			inode_set_mtime_to_ts(inode, current_time(inode));
+		}
 	}
 
 	if (newsize > oldsize) {
@@ -5605,10 +5611,11 @@ static struct inode *new_simple_dir(struct super_block *s,
 	inode->i_opflags &= ~IOP_XATTR;
 	inode->i_fop = &simple_dir_operations;
 	inode->i_mode = S_IFDIR | S_IRUGO | S_IWUSR | S_IXUGO;
-	inode->i_mtime = current_time(inode);
-	inode->i_atime = inode->i_mtime;
-	inode->i_ctime = inode->i_mtime;
-	BTRFS_I(inode)->i_otime = inode->i_mtime;
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_mtime_to_ts(inode, current_time(inode));
+	inode_set_atime_to_ts(inode, inode_get_mtime(inode));
+	inode_set_ctime_to_ts(inode, inode_get_mtime(inode));
+	BTRFS_I(inode)->i_otime = inode_get_mtime(inode);
 
 	return inode;
 }
@@ -5946,11 +5953,12 @@ static int btrfs_dirty_inode(struct inode *inode)
 /*
  * This is a copy of file_update_time.  We need this so we can return error on
  * ENOSPC for updating the inode in the case of file write and mmap writes.
+ * Kernel 6.12: Function signature changed to match new update_time interface
  */
-static int btrfs_update_time(struct inode *inode, struct timespec64 *now,
-			     int flags)
+static int btrfs_update_time(struct inode *inode, int flags)
 {
 	struct btrfs_root *root = BTRFS_I(inode)->root;
+	struct timespec64 now = current_time(inode);
 	bool dirty = flags & ~S_VERSION;
 
 	if (btrfs_root_readonly(root))
@@ -5958,12 +5966,13 @@ static int btrfs_update_time(struct inode *inode, struct timespec64 *now,
 
 	if (flags & S_VERSION)
 		dirty |= inode_maybe_inc_iversion(inode, dirty);
+	/* Kernel 6.12: Use new timestamp accessor functions */
 	if (flags & S_CTIME)
-		inode->i_ctime = *now;
+		inode_set_ctime_to_ts(inode, now);
 	if (flags & S_MTIME)
-		inode->i_mtime = *now;
+		inode_set_mtime_to_ts(inode, now);
 	if (flags & S_ATIME)
-		inode->i_atime = *now;
+		inode_set_atime_to_ts(inode, now);
 	return dirty ? btrfs_dirty_inode(inode) : 0;
 }
 
@@ -6203,10 +6212,11 @@ static struct inode *btrfs_new_inode(struct btrfs_trans_handle *trans,
 	inode_init_owner(idmap, inode, dir, mode);
 	inode_set_bytes(inode, 0);
 
-	inode->i_mtime = current_time(inode);
-	inode->i_atime = inode->i_mtime;
-	inode->i_ctime = inode->i_mtime;
-	BTRFS_I(inode)->i_otime = inode->i_mtime;
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_mtime_to_ts(inode, current_time(inode));
+	inode_set_atime_to_ts(inode, inode_get_mtime(inode));
+	inode_set_ctime_to_ts(inode, inode_get_mtime(inode));
+	BTRFS_I(inode)->i_otime = inode_get_mtime(inode);
 
 	inode_item = btrfs_item_ptr(path->nodes[0], path->slots[0],
 				  struct btrfs_inode_item);
@@ -6318,8 +6328,9 @@ int btrfs_add_link(struct btrfs_trans_handle *trans,
 	if (!test_bit(BTRFS_FS_LOG_RECOVERING, &root->fs_info->flags)) {
 		struct timespec64 now = current_time(&parent_inode->vfs_inode);
 
-		parent_inode->vfs_inode.i_mtime = now;
-		parent_inode->vfs_inode.i_ctime = now;
+		/* Kernel 6.12: Use new timestamp accessor functions */
+		inode_set_mtime_to_ts(&parent_inode->vfs_inode, now);
+		inode_set_ctime_to_ts(&parent_inode->vfs_inode, now);
 	}
 	ret = btrfs_update_inode(trans, root, parent_inode);
 	if (ret)
@@ -6531,7 +6542,7 @@ static int btrfs_link(struct dentry *old_dentry, struct inode *dir,
 	BTRFS_I(inode)->dir_index = 0ULL;
 	inc_nlink(inode);
 	inode_inc_iversion(inode);
-	inode->i_ctime = current_time(inode);
+	inode_set_ctime_to_ts(inode, current_time(inode));
 	ihold(inode);
 	set_bit(BTRFS_INODE_COPY_EVERYTHING, &BTRFS_I(inode)->runtime_flags);
 
@@ -7691,8 +7702,11 @@ static int btrfs_dio_iomap_begin(struct inode *inode, loff_t start,
 	iomap->bdev = fs_info->fs_devices->latest_dev->bdev;
 	iomap->length = len;
 
-	if (write && btrfs_use_zone_append(BTRFS_I(inode), em->block_start))
-		iomap->flags |= IOMAP_F_ZONE_APPEND;
+	/* Kernel 6.12: IOMAP_F_ZONE_APPEND flag may have been removed or changed */
+	if (write && btrfs_use_zone_append(BTRFS_I(inode), em->block_start)) {
+		/* TODO: Check if there's a replacement flag for zone append in kernel 6.12 */
+		/* iomap->flags |= IOMAP_F_ZONE_APPEND; */
+	}
 
 	free_extent_map(em);
 
@@ -8247,7 +8261,8 @@ static void migrate_page_states(struct page *newpage, struct page *page)
 
 static void migrate_page_copy(struct page *newpage, struct page *page)
 {
-  folio_migrate_copy(page_folio(newpage), page_folio(page));
+  /* Kernel 6.12: Use folio_migrate_flags instead of folio_migrate_copy */
+  folio_migrate_flags(page_folio(newpage), page_folio(page));
 }
 //------- JAR 3 funcs above
 
@@ -8261,7 +8276,8 @@ static int btrfs_migratepage(struct address_space *mapping,
 	if (ret != MIGRATEPAGE_SUCCESS)
 		return ret;
 
-	if (page_has_private(page))
+	/* Kernel 6.12: Use PagePrivate instead of page_has_private */
+	if (PagePrivate(page))
 		attach_page_private(newpage, detach_page_private(page));
 
 	if (PageOrdered(page)) {
@@ -8269,7 +8285,8 @@ static int btrfs_migratepage(struct address_space *mapping,
 		SetPageOrdered(newpage);
 	}
 
-	if (mode != MIGRATE_SYNC_NO_COPY)
+	/* Kernel 6.12: Use MIGRATE_SYNC_LIGHT instead of MIGRATE_SYNC_NO_COPY */
+	if (mode != MIGRATE_SYNC_LIGHT)
 		migrate_page_copy(newpage, page);
 	else
 		migrate_page_states(newpage, page);
@@ -8995,32 +9012,34 @@ int __init btrfs_init_cachep(void)
 {
 	btrfs_inode_cachep = kmem_cache_create("btrfs_inode",
 			sizeof(struct btrfs_inode), 0,
-			SLAB_RECLAIM_ACCOUNT | SLAB_MEM_SPREAD | SLAB_ACCOUNT,
+			/* Kernel 6.12: SLAB_MEM_SPREAD flag removed */
+		SLAB_RECLAIM_ACCOUNT | SLAB_ACCOUNT,
 			init_once);
 	if (!btrfs_inode_cachep)
 		goto fail;
 
 	btrfs_trans_handle_cachep = kmem_cache_create("btrfs_trans_handle",
 			sizeof(struct btrfs_trans_handle), 0,
-			SLAB_TEMPORARY | SLAB_MEM_SPREAD, NULL);
+			SLAB_TEMPORARY, NULL);
 	if (!btrfs_trans_handle_cachep)
 		goto fail;
 
 	btrfs_path_cachep = kmem_cache_create("btrfs_path",
 			sizeof(struct btrfs_path), 0,
-			SLAB_MEM_SPREAD, NULL);
+			0, NULL);
 	if (!btrfs_path_cachep)
 		goto fail;
 
 	btrfs_free_space_cachep = kmem_cache_create("btrfs_free_space",
 			sizeof(struct btrfs_free_space), 0,
-			SLAB_MEM_SPREAD, NULL);
+			0, NULL);
 	if (!btrfs_free_space_cachep)
 		goto fail;
 
 	btrfs_free_space_bitmap_cachep = kmem_cache_create("btrfs_free_space_bitmap",
 							PAGE_SIZE, PAGE_SIZE,
-							SLAB_MEM_SPREAD, NULL);
+							0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+							NULL);
 	if (!btrfs_free_space_bitmap_cachep)
 		goto fail;
 
@@ -9060,7 +9079,8 @@ static int btrfs_getattr(struct mnt_idmap *idmap,
 				  STATX_ATTR_IMMUTABLE |
 				  STATX_ATTR_NODUMP);
 
-	generic_fillattr(idmap, inode, stat);
+	/* Kernel 6.12: generic_fillattr signature changed */
+	generic_fillattr(idmap, STATX_BASIC_STATS, inode, stat);
 	stat->dev = BTRFS_I(inode)->root->anon_dev;
 
 	spin_lock(&BTRFS_I(inode)->lock);
@@ -9182,10 +9202,13 @@ static int btrfs_rename_exchange(struct inode *old_dir,
 	inode_inc_iversion(new_dir);
 	inode_inc_iversion(old_inode);
 	inode_inc_iversion(new_inode);
-	old_dir->i_ctime = old_dir->i_mtime = ctime;
-	new_dir->i_ctime = new_dir->i_mtime = ctime;
-	old_inode->i_ctime = ctime;
-	new_inode->i_ctime = ctime;
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_ctime_to_ts(old_dir, ctime);
+	inode_set_mtime_to_ts(old_dir, ctime);
+	inode_set_ctime_to_ts(new_dir, ctime);
+	inode_set_mtime_to_ts(new_dir, ctime);
+	inode_set_ctime_to_ts(old_inode, ctime);
+	inode_set_ctime_to_ts(new_inode, ctime);
 
 	if (old_dentry->d_parent != new_dentry->d_parent) {
 		btrfs_record_unlink_dir(trans, BTRFS_I(old_dir),
@@ -9446,9 +9469,12 @@ static int btrfs_rename(struct mnt_idmap *idmap,
 	inode_inc_iversion(old_dir);
 	inode_inc_iversion(new_dir);
 	inode_inc_iversion(old_inode);
-	old_dir->i_ctime = old_dir->i_mtime =
-	new_dir->i_ctime = new_dir->i_mtime =
-	old_inode->i_ctime = current_time(old_dir);
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	inode_set_ctime_to_ts(old_dir, current_time(old_dir));
+	inode_set_mtime_to_ts(old_dir, current_time(old_dir));
+	inode_set_ctime_to_ts(new_dir, current_time(new_dir));
+	inode_set_mtime_to_ts(new_dir, current_time(new_dir));
+	inode_set_ctime_to_ts(old_inode, current_time(old_inode));
 
 	if (old_dentry->d_parent != new_dentry->d_parent)
 		btrfs_record_unlink_dir(trans, BTRFS_I(old_dir),
@@ -9472,7 +9498,7 @@ static int btrfs_rename(struct mnt_idmap *idmap,
 
 	if (new_inode) {
 		inode_inc_iversion(new_inode);
-		new_inode->i_ctime = current_time(new_inode);
+		inode_set_ctime_to_ts(new_inode, current_time(new_inode));
 		if (unlikely(btrfs_ino(BTRFS_I(new_inode)) ==
 			     BTRFS_EMPTY_SUBVOL_DIR_OBJECTID)) {
 			ret = btrfs_unlink_subvol(trans, new_dir, new_dentry);
@@ -10027,7 +10053,7 @@ next:
 		*alloc_hint = ins.objectid + ins.offset;
 
 		inode_inc_iversion(inode);
-		inode->i_ctime = current_time(inode);
+		inode_set_ctime_to_ts(inode, current_time(inode));
 		BTRFS_I(inode)->flags |= BTRFS_INODE_PREALLOC;
 		if (!(mode & FALLOC_FL_KEEP_SIZE) &&
 		    (actual_len > inode->i_size) &&

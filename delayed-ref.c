@@ -1148,21 +1148,24 @@ int __init btrfs_delayed_ref_init(void)
 	btrfs_delayed_ref_head_cachep = kmem_cache_create(
 				"btrfs_delayed_ref_head",
 				sizeof(struct btrfs_delayed_ref_head), 0,
-				SLAB_MEM_SPREAD, NULL);
+				0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+				NULL);
 	if (!btrfs_delayed_ref_head_cachep)
 		goto fail;
 
 	btrfs_delayed_tree_ref_cachep = kmem_cache_create(
 				"btrfs_delayed_tree_ref",
 				sizeof(struct btrfs_delayed_tree_ref), 0,
-				SLAB_MEM_SPREAD, NULL);
+				0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+				NULL);
 	if (!btrfs_delayed_tree_ref_cachep)
 		goto fail;
 
 	btrfs_delayed_data_ref_cachep = kmem_cache_create(
 				"btrfs_delayed_data_ref",
 				sizeof(struct btrfs_delayed_data_ref), 0,
-				SLAB_MEM_SPREAD, NULL);
+				0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
+				NULL);
 	if (!btrfs_delayed_data_ref_cachep)
 		goto fail;
 

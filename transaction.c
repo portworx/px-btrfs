@@ -1916,10 +1916,9 @@ static void update_super_roots(struct btrfs_fs_info *fs_info)
 	if (test_bit(BTRFS_FS_UPDATE_UUID_TREE_GEN, &fs_info->flags))
 		super->uuid_tree_generation = root_item->generation;
 
-	/* Kernel 6.12: Extent Tree v2 block_group_root fields removed */
 	if (btrfs_fs_incompat(fs_info, EXTENT_TREE_V2)) {
-		/* block_group_root fields no longer exist in kernel 6.12 super block */
-		/* This functionality was experimental and removed */
+		/* Kernel 6.12: Use nr_global_roots instead of individual block_group_root fields */
+		super->nr_global_roots = fs_info->nr_global_roots;
 	}
 }
 
