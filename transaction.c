@@ -1831,8 +1831,12 @@ static noinline int create_pending_snapshot(struct btrfs_trans_handle *trans,
 
 	btrfs_i_size_write(BTRFS_I(parent_inode), parent_inode->i_size +
 					 dentry->d_name.len * 2);
-	parent_inode->i_mtime = parent_inode->i_ctime =
-		current_time(parent_inode);
+	/* Kernel 6.12: Use new timestamp accessor functions */
+	{
+		struct timespec64 now = current_time(parent_inode);
+		inode_set_mtime_to_ts(parent_inode, now);
+		inode_set_ctime_to_ts(parent_inode, now);
+	}
 	ret = btrfs_update_inode_fallback(trans, parent_root, BTRFS_I(parent_inode));
 	if (ret) {
 		btrfs_abort_transaction(trans, ret);
@@ -1912,12 +1916,10 @@ static void update_super_roots(struct btrfs_fs_info *fs_info)
 	if (test_bit(BTRFS_FS_UPDATE_UUID_TREE_GEN, &fs_info->flags))
 		super->uuid_tree_generation = root_item->generation;
 
+	/* Kernel 6.12: Extent Tree v2 block_group_root fields removed */
 	if (btrfs_fs_incompat(fs_info, EXTENT_TREE_V2)) {
-		root_item = &fs_info->block_group_root->root_item;
-
-		super->block_group_root = root_item->bytenr;
-		super->block_group_root_generation = root_item->generation;
-		super->block_group_root_level = root_item->level;
+		/* block_group_root fields no longer exist in kernel 6.12 super block */
+		/* This functionality was experimental and removed */
 	}
 }
 

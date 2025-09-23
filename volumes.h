@@ -11,6 +11,9 @@
 #include <linux/btrfs.h>
 #include "async-thread.h"
 
+/* Forward declaration */
+struct btrfs_transaction;
+
 #define BTRFS_MAX_DATA_CHUNK_SIZE	(10ULL * SZ_1G)
 
 extern struct mutex uuid_mutex;
@@ -407,6 +410,10 @@ struct btrfs_io_context {
 	 * so raid_map[0] is the start of our full stripe
 	 */
 	u64 *raid_map;
+
+	/* For kernel 6.12 trace events compatibility */
+	u64 full_stripe_logical;
+
 	struct btrfs_io_stripe stripes[];
 };
 

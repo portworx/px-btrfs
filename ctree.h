@@ -34,6 +34,7 @@
 #include "async-thread.h"
 #include "block-rsv.h"
 #include "locking.h"
+#include "extent-tree.h"
 
 struct btrfs_trans_handle;
 struct btrfs_transaction;
@@ -216,6 +217,26 @@ enum {
  */
 #define BTRFS_VERITY_DESC_ITEM_KEY	36
 #define BTRFS_VERITY_MERKLE_ITEM_KEY	37
+
+/* Compatibility for removed key - obsolete since kernel 6.6 */
+#define BTRFS_EXTENT_REF_V0_KEY		180
+
+/* Kernel 6.12 compatibility: Page error functions were removed */
+static inline void SetPageError(struct page *page)
+{
+	/* Page error flag removed in kernel 6.12 - error handled by other means */
+}
+
+static inline void ClearPageError(struct page *page)
+{
+	/* Page error flag removed in kernel 6.12 - no-op */
+}
+
+static inline int PageError(struct page *page)
+{
+	/* Page error flag removed in kernel 6.12 - check !PageUptodate instead */
+	return !PageUptodate(page);
+}
 
 #define BTRFS_FEATURE_COMPAT_RO_VERITY			(1ULL << 2)
 

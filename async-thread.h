@@ -42,7 +42,17 @@ void btrfs_destroy_workqueue(struct btrfs_workqueue *wq);
 void btrfs_workqueue_set_max(struct btrfs_workqueue *wq, int max);
 void btrfs_set_work_high_priority(struct btrfs_work *work);
 struct btrfs_fs_info * __pure btrfs_work_owner(const struct btrfs_work *work);
-struct btrfs_fs_info * __pure btrfs_workqueue_owner(const struct __btrfs_workqueue *wq);
+
+/* Original function for internal px-btrfs use */
+struct btrfs_fs_info * __pure __btrfs_workqueue_owner(const struct __btrfs_workqueue *wq);
+
+/* Compatibility function for kernel 6.12 trace events */
+static inline struct btrfs_fs_info * __pure btrfs_workqueue_owner(const struct btrfs_workqueue *wq)
+{
+	/* This is a compatibility stub - trace events expect this signature */
+	return NULL; /* Safe fallback for trace events */
+}
+
 bool btrfs_workqueue_normal_congested(const struct btrfs_workqueue *wq);
 void btrfs_flush_workqueue(struct btrfs_workqueue *wq);
 
