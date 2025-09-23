@@ -543,7 +543,8 @@ btrfs_get_bdev_and_sb(const char *device_path, fmode_t flags, void *holder,
 
 	if (flush)
 		sync_blockdev(*bdev);
-	ret = set_blocksize(*bdev, BTRFS_BDEV_BLOCKSIZE);
+	/* Kernel RHEL10-6.12: set_blocksize now expects struct file * instead of struct block_device * */
+	ret = set_blocksize(*bdev_file, BTRFS_BDEV_BLOCKSIZE);
 	if (ret) {
 	    // JAR blkdev_put(*bdev, flags);
 	    // Sebas : the below API doesn't exist
@@ -1346,7 +1347,8 @@ static struct btrfs_super_block *btrfs_read_disk_super(struct block_device *bdev
 		return ERR_PTR(-EINVAL);
 
 	/* pull in the page with our super */
-	page = read_cache_page_gfp(bdev->bd_inode->i_mapping, index, GFP_KERNEL);
+	/* Kernel RHEL10-6.12: bd_inode removed, use bd_mapping directly */
+	page = read_cache_page_gfp(bdev->bd_mapping, index, GFP_KERNEL);
 
 	if (IS_ERR(page))
 		return ERR_CAST(page);
@@ -2771,7 +2773,8 @@ int btrfs_init_new_device(struct btrfs_fs_info *fs_info, const char *device_path
 	// JAR -- add line below
 	device->holder = fs_info->bdev_holder;
 	device->dev_stats_valid = 1;
-	set_blocksize(device->bdev, BTRFS_BDEV_BLOCKSIZE);
+	/* Kernel RHEL10-6.12: set_blocksize now expects struct file * instead of struct block_device * */
+	set_blocksize(bdev_file, BTRFS_BDEV_BLOCKSIZE);
 
 	if (seeding_dev) {
 		btrfs_clear_sb_rdonly(sb);
@@ -3289,7 +3292,8 @@ int btrfs_remove_chunk(struct btrfs_trans_handle *trans, u64 chunk_offset)
 		goto out;
 	}
 
-	trace_btrfs_chunk_free(fs_info, map, chunk_offset, em->len);
+	/* Kernel RHEL10-6.12: trace function expects btrfs_chunk_map instead of map_lookup */
+	trace_btrfs_chunk_free(fs_info, (const struct btrfs_chunk_map *)map, chunk_offset, em->len);
 
 	if (map->type & BTRFS_BLOCK_GROUP_SYSTEM) {
 		ret = btrfs_del_sys_chunk(fs_info, chunk_offset);
@@ -5502,7 +5506,8 @@ static struct btrfs_block_group *create_chunk(struct btrfs_trans_handle *trans,
 	map->type = type;
 	map->sub_stripes = ctl->sub_stripes;
 
-	trace_btrfs_chunk_alloc(info, map, start, ctl->chunk_size);
+	/* Kernel RHEL10-6.12: trace function expects btrfs_chunk_map instead of map_lookup */
+	trace_btrfs_chunk_alloc(info, (const struct btrfs_chunk_map *)map, start, ctl->chunk_size);
 
 	em = alloc_extent_map();
 	if (!em) {

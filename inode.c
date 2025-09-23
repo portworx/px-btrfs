@@ -3779,7 +3779,7 @@ static int btrfs_read_locked_inode(struct inode *inode,
 	btrfs_inode_set_file_extent_range(BTRFS_I(inode), 0,
 			round_up(i_size_read(inode), fs_info->sectorsize));
 
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_atime(inode, btrfs_timespec_sec(leaf, &inode_item->atime),
 			btrfs_timespec_nsec(leaf, &inode_item->atime));
 	inode_set_mtime(inode, btrfs_timespec_sec(leaf, &inode_item->mtime),
@@ -3945,7 +3945,7 @@ static void fill_inode_item(struct btrfs_trans_handle *trans,
 	btrfs_set_token_inode_mode(&token, item, inode->i_mode);
 	btrfs_set_token_inode_nlink(&token, item, inode->i_nlink);
 
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	btrfs_set_token_timespec_sec(&token, &item->atime,
 				     inode_get_atime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->atime,
@@ -4161,7 +4161,7 @@ err:
 	btrfs_i_size_write(dir, dir->vfs_inode.i_size - name_len * 2);
 	inode_inc_iversion(&inode->vfs_inode);
 	inode_inc_iversion(&dir->vfs_inode);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_ctime_to_ts(&inode->vfs_inode, current_time(&inode->vfs_inode));
 	inode_set_mtime_to_ts(&dir->vfs_inode, current_time(&dir->vfs_inode));
 	inode_set_ctime_to_ts(&dir->vfs_inode, current_time(&dir->vfs_inode));
@@ -4325,7 +4325,7 @@ static int btrfs_unlink_subvol(struct btrfs_trans_handle *trans,
 
 	btrfs_i_size_write(BTRFS_I(dir), dir->i_size - name_len * 2);
 	inode_inc_iversion(dir);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_mtime_to_ts(dir, current_time(dir));
 	inode_set_ctime_to_ts(dir, current_time(dir));
 	ret = btrfs_update_inode_fallback(trans, root, BTRFS_I(dir));
@@ -4970,7 +4970,7 @@ static int btrfs_setsize(struct inode *inode, struct iattr *attr)
 	if (newsize != oldsize) {
 		inode_inc_iversion(inode);
 		if (!(mask & (ATTR_CTIME | ATTR_MTIME))) {
-			/* Kernel 6.12: Use new timestamp accessor functions */
+			/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 			inode_set_ctime_to_ts(inode, current_time(inode));
 			inode_set_mtime_to_ts(inode, current_time(inode));
 		}
@@ -5611,7 +5611,7 @@ static struct inode *new_simple_dir(struct super_block *s,
 	inode->i_opflags &= ~IOP_XATTR;
 	inode->i_fop = &simple_dir_operations;
 	inode->i_mode = S_IFDIR | S_IRUGO | S_IWUSR | S_IXUGO;
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_mtime_to_ts(inode, current_time(inode));
 	inode_set_atime_to_ts(inode, inode_get_mtime(inode));
 	inode_set_ctime_to_ts(inode, inode_get_mtime(inode));
@@ -5953,7 +5953,7 @@ static int btrfs_dirty_inode(struct inode *inode)
 /*
  * This is a copy of file_update_time.  We need this so we can return error on
  * ENOSPC for updating the inode in the case of file write and mmap writes.
- * Kernel 6.12: Function signature changed to match new update_time interface
+ * Kernel RHEL10-6.12: Function signature changed to match new update_time interface
  */
 static int btrfs_update_time(struct inode *inode, int flags)
 {
@@ -5966,7 +5966,7 @@ static int btrfs_update_time(struct inode *inode, int flags)
 
 	if (flags & S_VERSION)
 		dirty |= inode_maybe_inc_iversion(inode, dirty);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	if (flags & S_CTIME)
 		inode_set_ctime_to_ts(inode, now);
 	if (flags & S_MTIME)
@@ -6212,7 +6212,7 @@ static struct inode *btrfs_new_inode(struct btrfs_trans_handle *trans,
 	inode_init_owner(idmap, inode, dir, mode);
 	inode_set_bytes(inode, 0);
 
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_mtime_to_ts(inode, current_time(inode));
 	inode_set_atime_to_ts(inode, inode_get_mtime(inode));
 	inode_set_ctime_to_ts(inode, inode_get_mtime(inode));
@@ -6328,7 +6328,7 @@ int btrfs_add_link(struct btrfs_trans_handle *trans,
 	if (!test_bit(BTRFS_FS_LOG_RECOVERING, &root->fs_info->flags)) {
 		struct timespec64 now = current_time(&parent_inode->vfs_inode);
 
-		/* Kernel 6.12: Use new timestamp accessor functions */
+		/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 		inode_set_mtime_to_ts(&parent_inode->vfs_inode, now);
 		inode_set_ctime_to_ts(&parent_inode->vfs_inode, now);
 	}
@@ -7702,7 +7702,7 @@ static int btrfs_dio_iomap_begin(struct inode *inode, loff_t start,
 	iomap->bdev = fs_info->fs_devices->latest_dev->bdev;
 	iomap->length = len;
 
-	/* Kernel 6.12: IOMAP_F_ZONE_APPEND flag may have been removed or changed */
+	/* Kernel RHEL10-6.12: IOMAP_F_ZONE_APPEND flag may have been removed or changed */
 	if (write && btrfs_use_zone_append(BTRFS_I(inode), em->block_start)) {
 		/* TODO: Check if there's a replacement flag for zone append in kernel 6.12 */
 		/* iomap->flags |= IOMAP_F_ZONE_APPEND; */
@@ -8261,7 +8261,7 @@ static void migrate_page_states(struct page *newpage, struct page *page)
 
 static void migrate_page_copy(struct page *newpage, struct page *page)
 {
-  /* Kernel 6.12: Use folio_migrate_flags instead of folio_migrate_copy */
+  /* Kernel RHEL10-6.12: Use folio_migrate_flags instead of folio_migrate_copy */
   folio_migrate_flags(page_folio(newpage), page_folio(page));
 }
 //------- JAR 3 funcs above
@@ -8276,7 +8276,7 @@ static int btrfs_migratepage(struct address_space *mapping,
 	if (ret != MIGRATEPAGE_SUCCESS)
 		return ret;
 
-	/* Kernel 6.12: Use PagePrivate instead of page_has_private */
+	/* Kernel RHEL10-6.12: Use PagePrivate instead of page_has_private */
 	if (PagePrivate(page))
 		attach_page_private(newpage, detach_page_private(page));
 
@@ -8285,7 +8285,7 @@ static int btrfs_migratepage(struct address_space *mapping,
 		SetPageOrdered(newpage);
 	}
 
-	/* Kernel 6.12: Use MIGRATE_SYNC_LIGHT instead of MIGRATE_SYNC_NO_COPY */
+	/* Kernel RHEL10-6.12: Use MIGRATE_SYNC_LIGHT instead of MIGRATE_SYNC_NO_COPY */
 	if (mode != MIGRATE_SYNC_LIGHT)
 		migrate_page_copy(newpage, page);
 	else
@@ -9012,7 +9012,7 @@ int __init btrfs_init_cachep(void)
 {
 	btrfs_inode_cachep = kmem_cache_create("btrfs_inode",
 			sizeof(struct btrfs_inode), 0,
-			/* Kernel 6.12: SLAB_MEM_SPREAD flag removed */
+			/* Kernel RHEL10-6.12: SLAB_MEM_SPREAD flag removed */
 		SLAB_RECLAIM_ACCOUNT | SLAB_ACCOUNT,
 			init_once);
 	if (!btrfs_inode_cachep)
@@ -9079,7 +9079,7 @@ static int btrfs_getattr(struct mnt_idmap *idmap,
 				  STATX_ATTR_IMMUTABLE |
 				  STATX_ATTR_NODUMP);
 
-	/* Kernel 6.12: generic_fillattr signature changed */
+	/* Kernel RHEL10-6.12: generic_fillattr signature changed */
 	generic_fillattr(idmap, STATX_BASIC_STATS, inode, stat);
 	stat->dev = BTRFS_I(inode)->root->anon_dev;
 
@@ -9202,7 +9202,7 @@ static int btrfs_rename_exchange(struct inode *old_dir,
 	inode_inc_iversion(new_dir);
 	inode_inc_iversion(old_inode);
 	inode_inc_iversion(new_inode);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_ctime_to_ts(old_dir, ctime);
 	inode_set_mtime_to_ts(old_dir, ctime);
 	inode_set_ctime_to_ts(new_dir, ctime);
@@ -9469,7 +9469,7 @@ static int btrfs_rename(struct mnt_idmap *idmap,
 	inode_inc_iversion(old_dir);
 	inode_inc_iversion(new_dir);
 	inode_inc_iversion(old_inode);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_ctime_to_ts(old_dir, current_time(old_dir));
 	inode_set_mtime_to_ts(old_dir, current_time(old_dir));
 	inode_set_ctime_to_ts(new_dir, current_time(new_dir));
@@ -11444,7 +11444,7 @@ static const struct address_space_operations btrfs_aops = {
 	.migrate_folio	= btrfs_migrate_folio,
 #endif
 	.dirty_folio	= filemap_dirty_folio,
-	/* Kernel 6.12: error_remove_page changed to error_remove_folio */
+	/* Kernel RHEL10-6.12: error_remove_page changed to error_remove_folio */
 	.error_remove_folio = generic_error_remove_folio,
 	.swap_activate	= btrfs_swap_activate,
 	.swap_deactivate = btrfs_swap_deactivate,

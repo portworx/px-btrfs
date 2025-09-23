@@ -2424,7 +2424,7 @@ BTRFS_SETGET_STACK_FUNCS(super_uuid_tree_generation, struct btrfs_super_block,
  */
 static inline u64 btrfs_super_block_group_root(const struct btrfs_super_block *s)
 {
-	return 0; /* Kernel 6.12+ uses nr_global_roots approach */
+	return 0; /* Kernel RHEL10-6.12+ uses nr_global_roots approach */
 }
 
 static inline void btrfs_set_super_block_group_root(struct btrfs_super_block *s, u64 val)

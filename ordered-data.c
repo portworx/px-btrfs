@@ -732,7 +732,7 @@ int btrfs_wait_ordered_range(struct inode *inode, u64 start, u64 len)
 	u64 orig_end;
 	struct btrfs_ordered_extent *ordered;
 
-	/* Kernel 6.12: INT_LIMIT(loff_t) replaced with S64_MAX */
+	/* Kernel RHEL10-6.12: INT_LIMIT(loff_t) replaced with S64_MAX */
 	if (start + len < start) {
 		orig_end = S64_MAX;
 	} else {

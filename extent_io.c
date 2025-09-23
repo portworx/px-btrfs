@@ -3543,7 +3543,7 @@ static int attach_extent_buffer_page(struct extent_buffer *eb,
 	 * will not race with any other ebs.
 	 */
 	if (page->mapping)
-		/* Kernel 6.12: private_lock moved to i_private_lock */
+		/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 		lockdep_assert_held(&page->mapping->i_private_lock);
 
 	if (fs_info->sectorsize == PAGE_SIZE) {
@@ -4146,7 +4146,7 @@ static int __extent_writepage(struct page *page, struct writeback_control *wbc,
 	loff_t i_size = i_size_read(inode);
 	unsigned long end_index = i_size >> PAGE_SHIFT;
 
-	/* Kernel 6.12: trace function now expects folio instead of page */
+	/* Kernel RHEL10-6.12: trace function now expects folio instead of page */
 	trace_extent_writepage(page_folio(page), inode, wbc);
 
 	WARN_ON(!PageLocked(page));
@@ -4728,7 +4728,7 @@ static int submit_eb_subpage(struct page *page,
 		 * Take private lock to ensure the subpage won't be detached
 		 * in the meantime.
 		 */
-		/* Kernel 6.12: private_lock moved to i_private_lock */
+		/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 		spin_lock(&page->mapping->i_private_lock);
 		if (!PagePrivate(page)) {
 			spin_unlock(&page->mapping->i_private_lock);
@@ -4820,7 +4820,7 @@ static int submit_eb_page(struct page *page, struct writeback_control *wbc,
 	if (btrfs_sb(page->mapping->host->i_sb)->sectorsize < PAGE_SIZE)
 		return submit_eb_subpage(page, wbc, epd);
 
-	/* Kernel 6.12: private_lock moved to i_private_lock */
+	/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 	spin_lock(&mapping->i_private_lock);
 	if (!PagePrivate(page)) {
 		spin_unlock(&mapping->i_private_lock);
@@ -5839,7 +5839,7 @@ static bool page_range_has_eb(struct btrfs_fs_info *fs_info, struct page *page)
 {
 	struct btrfs_subpage *subpage;
 
-	/* Kernel 6.12: private_lock moved to i_private_lock */
+	/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 	lockdep_assert_held(&page->mapping->i_private_lock);
 
 	if (PagePrivate(page)) {
@@ -5866,7 +5866,7 @@ static void detach_extent_buffer_page(struct extent_buffer *eb, struct page *pag
 	 * be done under the private_lock.
 	 */
 	if (mapped)
-		/* Kernel 6.12: private_lock moved to i_private_lock */
+		/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 		spin_lock(&page->mapping->i_private_lock);
 
 	if (!PagePrivate(page)) {
@@ -6295,7 +6295,7 @@ struct extent_buffer *alloc_extent_buffer(struct btrfs_fs_info *fs_info,
 			}
 		}
 
-		/* Kernel 6.12: private_lock moved to i_private_lock */
+		/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 		spin_lock(&mapping->i_private_lock);
 		exists = grab_extent_buffer(fs_info, p);
 		if (exists) {
@@ -6477,7 +6477,7 @@ static void btree_clear_page_dirty(struct page *page)
 	clear_page_dirty_for_io(page);
 	xa_lock_irq(&page->mapping->i_pages);
 	if (!PageDirty(page))
-		/* Kernel 6.12: page_index() replaced with page->index */
+		/* Kernel RHEL10-6.12: page_index() replaced with page->index */
 		__xa_clear_mark(&page->mapping->i_pages,
 				page->index, PAGECACHE_TAG_DIRTY);
 	xa_unlock_irq(&page->mapping->i_pages);
@@ -7434,7 +7434,7 @@ static int try_release_subpage_extent_buffer(struct page *page)
 	 * Finally to check if we have cleared page private, as if we have
 	 * released all ebs in the page, the page private should be cleared now.
 	 */
-	/* Kernel 6.12: private_lock moved to i_private_lock */
+	/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 	spin_lock(&page->mapping->i_private_lock);
 	if (!PagePrivate(page))
 		ret = 1;
@@ -7456,7 +7456,7 @@ int try_release_extent_buffer(struct page *page)
 	 * We need to make sure nobody is changing page->private, as we rely on
 	 * page->private as the pointer to extent buffer.
 	 */
-	/* Kernel 6.12: private_lock moved to i_private_lock */
+	/* Kernel RHEL10-6.12: private_lock moved to i_private_lock */
 	spin_lock(&page->mapping->i_private_lock);
 	if (!PagePrivate(page)) {
 		spin_unlock(&page->mapping->i_private_lock);

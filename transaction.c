@@ -1831,7 +1831,7 @@ static noinline int create_pending_snapshot(struct btrfs_trans_handle *trans,
 
 	btrfs_i_size_write(BTRFS_I(parent_inode), parent_inode->i_size +
 					 dentry->d_name.len * 2);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	{
 		struct timespec64 now = current_time(parent_inode);
 		inode_set_mtime_to_ts(parent_inode, now);
@@ -1917,7 +1917,7 @@ static void update_super_roots(struct btrfs_fs_info *fs_info)
 		super->uuid_tree_generation = root_item->generation;
 
 	if (btrfs_fs_incompat(fs_info, EXTENT_TREE_V2)) {
-		/* Kernel 6.12: Use nr_global_roots instead of individual block_group_root fields */
+		/* Kernel RHEL10-6.12: Use nr_global_roots instead of individual block_group_root fields */
 		super->nr_global_roots = fs_info->nr_global_roots;
 	}
 }

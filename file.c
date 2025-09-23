@@ -1558,7 +1558,7 @@ static void update_time_for_write(struct inode *inode)
 		return;
 
 	now = current_time(inode);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	{
 		struct timespec64 mtime = inode_get_mtime(inode);
 		struct timespec64 ctime = inode_get_ctime(inode);
@@ -1974,7 +1974,7 @@ relock:
 	 */
 again:
 	from->nofault = true;
-	/* Kernel 6.12: iomap_dio_rw signature changed */
+	/* Kernel RHEL10-6.12: iomap_dio_rw signature changed */
 	err = iomap_dio_rw(iocb, from, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
 			   IOMAP_DIO_PARTIAL, NULL, written);
 	from->nofault = false;
@@ -3106,7 +3106,7 @@ static int btrfs_punch_hole(struct file *file, loff_t offset, loff_t len)
 
 	ASSERT(trans != NULL);
 	inode_inc_iversion(inode);
-	/* Kernel 6.12: Use new timestamp accessor functions */
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	inode_set_mtime_to_ts(inode, current_time(inode));
 	inode_set_ctime_to_ts(inode, current_time(inode));
 	ret = btrfs_update_inode(trans, root, BTRFS_I(inode));
@@ -3128,7 +3128,7 @@ out_only_mutex:
 		struct timespec64 now = current_time(inode);
 
 		inode_inc_iversion(inode);
-		/* Kernel 6.12: Use new timestamp accessor functions */
+		/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 		inode_set_mtime_to_ts(inode, now);
 		inode_set_ctime_to_ts(inode, now);
 		trans = btrfs_start_transaction(root, 1);
@@ -3725,7 +3725,7 @@ static int btrfs_file_open(struct inode *inode, struct file *filp)
 {
 	int ret;
 
-	/* Kernel 6.12: FMODE_BUF_RASYNC and FMODE_BUF_WASYNC removed */
+	/* Kernel RHEL10-6.12: FMODE_BUF_RASYNC and FMODE_BUF_WASYNC removed */
 	filp->f_mode |= FMODE_NOWAIT | FMODE_CAN_ODIRECT;
 
 	ret = fsverity_file_open(inode, filp);
@@ -3787,7 +3787,7 @@ again:
 	 */
 	pagefault_disable();
 	to->nofault = true;
-	/* Kernel 6.12: iomap_dio_rw signature changed */
+	/* Kernel RHEL10-6.12: iomap_dio_rw signature changed */
 	ret = iomap_dio_rw(iocb, to, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
 			   IOMAP_DIO_PARTIAL, NULL, read);
 	to->nofault = false;
@@ -3840,7 +3840,7 @@ static ssize_t btrfs_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 const struct file_operations btrfs_file_operations = {
 	.llseek		= btrfs_file_llseek,
 	.read_iter      = btrfs_file_read_iter,
-	/* Kernel 6.12: generic_file_splice_read replaced with filemap_splice_read */
+	/* Kernel RHEL10-6.12: generic_file_splice_read replaced with filemap_splice_read */
 	.splice_read	= filemap_splice_read,
 	.write_iter	= btrfs_file_write_iter,
 	.splice_write	= iter_file_splice_write,
