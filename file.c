@@ -1559,11 +1559,16 @@ static void update_time_for_write(struct inode *inode)
 
 	now = current_time(inode);
 	/* Kernel 6.12: Use new timestamp accessor functions */
-	if (!timespec64_equal(&inode_get_mtime(inode), &now))
-		inode_set_mtime_to_ts(inode, now);
+	{
+		struct timespec64 mtime = inode_get_mtime(inode);
+		struct timespec64 ctime = inode_get_ctime(inode);
 
-	if (!timespec64_equal(&inode_get_ctime(inode), &now))
-		inode_set_ctime_to_ts(inode, now);
+		if (!timespec64_equal(&mtime, &now))
+			inode_set_mtime_to_ts(inode, now);
+
+		if (!timespec64_equal(&ctime, &now))
+			inode_set_ctime_to_ts(inode, now);
+	}
 
 	if (IS_I_VERSION(inode))
 		inode_inc_iversion(inode);
@@ -1969,8 +1974,9 @@ relock:
 	 */
 again:
 	from->nofault = true;
+	/* Kernel 6.12: iomap_dio_rw signature changed */
 	err = iomap_dio_rw(iocb, from, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
-			   IOMAP_DIO_PARTIAL, written);
+			   IOMAP_DIO_PARTIAL, NULL, written);
 	from->nofault = false;
 
 	/* No increment (+=) because iomap returns a cumulative value. */
@@ -3719,9 +3725,8 @@ static int btrfs_file_open(struct inode *inode, struct file *filp)
 {
 	int ret;
 
-	//JAR filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
-	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC | FMODE_BUF_WASYNC |
-		        FMODE_CAN_ODIRECT;
+	/* Kernel 6.12: FMODE_BUF_RASYNC and FMODE_BUF_WASYNC removed */
+	filp->f_mode |= FMODE_NOWAIT | FMODE_CAN_ODIRECT;
 
 	ret = fsverity_file_open(inode, filp);
 	if (ret)
@@ -3782,8 +3787,9 @@ again:
 	 */
 	pagefault_disable();
 	to->nofault = true;
+	/* Kernel 6.12: iomap_dio_rw signature changed */
 	ret = iomap_dio_rw(iocb, to, &btrfs_dio_iomap_ops, &btrfs_dio_ops,
-			   IOMAP_DIO_PARTIAL, read);
+			   IOMAP_DIO_PARTIAL, NULL, read);
 	to->nofault = false;
 	pagefault_enable();
 
@@ -3834,7 +3840,8 @@ static ssize_t btrfs_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 const struct file_operations btrfs_file_operations = {
 	.llseek		= btrfs_file_llseek,
 	.read_iter      = btrfs_file_read_iter,
-	.splice_read	= generic_file_splice_read,
+	/* Kernel 6.12: generic_file_splice_read replaced with filemap_splice_read */
+	.splice_read	= filemap_splice_read,
 	.write_iter	= btrfs_file_write_iter,
 	.splice_write	= iter_file_splice_write,
 	.mmap		= btrfs_file_mmap,

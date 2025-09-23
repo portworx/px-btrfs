@@ -11444,7 +11444,8 @@ static const struct address_space_operations btrfs_aops = {
 	.migrate_folio	= btrfs_migrate_folio,
 #endif
 	.dirty_folio	= filemap_dirty_folio,
-	.error_remove_page = generic_error_remove_page,
+	/* Kernel 6.12: error_remove_page changed to error_remove_folio */
+	.error_remove_folio = generic_error_remove_folio,
 	.swap_activate	= btrfs_swap_activate,
 	.swap_deactivate = btrfs_swap_deactivate,
 };
