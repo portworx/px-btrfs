@@ -27,6 +27,10 @@ enum {
 	EXTENT_FLAG_FS_MAPPING,
 	/* This em is merged from two or more physically adjacent ems */
 	EXTENT_FLAG_MERGED,
+	/* Compression type flags for kernel 6.12 compatibility */
+	EXTENT_FLAG_COMPRESS_ZLIB,
+	EXTENT_FLAG_COMPRESS_LZO,
+	EXTENT_FLAG_COMPRESS_ZSTD,
 };
 
 struct extent_map {

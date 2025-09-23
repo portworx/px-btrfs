@@ -46,6 +46,21 @@ struct btrfs_delayed_ref_node {
 	 */
 	int ref_mod;
 
+	/* Fields expected by kernel 6.12 trace events */
+	u64 parent;
+	u64 ref_root;
+
+	/* Union for type-specific data expected by trace events */
+	union {
+		struct {
+			int level;
+		} tree_ref;
+		struct {
+			u64 objectid;
+			u64 offset;
+		} data_ref;
+	};
+
 	unsigned int action:8;
 	unsigned int type:8;
 	/* is this node still in the rbtree? */
@@ -122,17 +137,13 @@ struct btrfs_delayed_ref_head {
 
 struct btrfs_delayed_tree_ref {
 	struct btrfs_delayed_ref_node node;
-	u64 root;
-	u64 parent;
-	int level;
+	/* root and parent are now in the base node structure */
+	/* level is now in node.tree_ref.level */
 };
 
 struct btrfs_delayed_data_ref {
 	struct btrfs_delayed_ref_node node;
-	u64 root;
-	u64 parent;
-	u64 objectid;
-	u64 offset;
+	/* root, parent, objectid, offset are now in the base node structure */
 };
 
 enum btrfs_delayed_ref_flags {
