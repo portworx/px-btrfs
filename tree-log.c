@@ -4279,20 +4279,21 @@ static void fill_inode_item(struct btrfs_trans_handle *trans,
 	btrfs_set_token_inode_mode(&token, item, inode->i_mode);
 	btrfs_set_token_inode_nlink(&token, item, inode->i_nlink);
 
+	/* Kernel RHEL10-6.12: Use new timestamp accessor functions */
 	btrfs_set_token_timespec_sec(&token, &item->atime,
-				     inode->i_atime.tv_sec);
+				     inode_get_atime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->atime,
-				      inode->i_atime.tv_nsec);
+				      inode_get_atime_nsec(inode));
 
 	btrfs_set_token_timespec_sec(&token, &item->mtime,
-				     inode->i_mtime.tv_sec);
+				     inode_get_mtime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->mtime,
-				      inode->i_mtime.tv_nsec);
+				      inode_get_mtime_nsec(inode));
 
 	btrfs_set_token_timespec_sec(&token, &item->ctime,
-				     inode->i_ctime.tv_sec);
+				     inode_get_ctime_sec(inode));
 	btrfs_set_token_timespec_nsec(&token, &item->ctime,
-				      inode->i_ctime.tv_nsec);
+				      inode_get_ctime_nsec(inode));
 
 	/*
 	 * We do not need to set the nbytes field, in fact during a fast fsync

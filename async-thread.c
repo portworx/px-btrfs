@@ -119,7 +119,8 @@ __btrfs_alloc_workqueue(struct btrfs_fs_info *fs_info, const char *name,
 	INIT_LIST_HEAD(&ret->ordered_list);
 	spin_lock_init(&ret->list_lock);
 	spin_lock_init(&ret->thres_lock);
-	trace_btrfs_workqueue_alloc(ret, name, flags & WQ_HIGHPRI);
+	/* Kernel RHEL10-6.12: trace function signature changed, cast type and remove flags argument */
+	trace_btrfs_workqueue_alloc((const struct btrfs_workqueue *)ret, name);
 	return ret;
 }
 
@@ -382,7 +383,8 @@ static inline void
 __btrfs_destroy_workqueue(struct __btrfs_workqueue *wq)
 {
 	destroy_workqueue(wq->normal_wq);
-	trace_btrfs_workqueue_destroy(wq);
+	/* Kernel RHEL10-6.12: trace function expects btrfs_workqueue instead of __btrfs_workqueue */
+	trace_btrfs_workqueue_destroy((const struct btrfs_workqueue *)wq);
 	kfree(wq);
 }
 

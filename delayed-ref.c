@@ -228,15 +228,16 @@ int btrfs_delayed_refs_rsv_refill(struct btrfs_fs_info *fs_info,
 static int comp_tree_refs(struct btrfs_delayed_tree_ref *ref1,
 			  struct btrfs_delayed_tree_ref *ref2)
 {
+	/* Kernel RHEL10-6.12: Fields moved to base node structure */
 	if (ref1->node.type == BTRFS_TREE_BLOCK_REF_KEY) {
-		if (ref1->root < ref2->root)
+		if (ref1->node.ref_root < ref2->node.ref_root)
 			return -1;
-		if (ref1->root > ref2->root)
+		if (ref1->node.ref_root > ref2->node.ref_root)
 			return 1;
 	} else {
-		if (ref1->parent < ref2->parent)
+		if (ref1->node.parent < ref2->node.parent)
 			return -1;
-		if (ref1->parent > ref2->parent)
+		if (ref1->node.parent > ref2->node.parent)
 			return 1;
 	}
 	return 0;
@@ -248,23 +249,24 @@ static int comp_tree_refs(struct btrfs_delayed_tree_ref *ref1,
 static int comp_data_refs(struct btrfs_delayed_data_ref *ref1,
 			  struct btrfs_delayed_data_ref *ref2)
 {
+	/* Kernel RHEL10-6.12: Fields moved to base node structure */
 	if (ref1->node.type == BTRFS_EXTENT_DATA_REF_KEY) {
-		if (ref1->root < ref2->root)
+		if (ref1->node.ref_root < ref2->node.ref_root)
 			return -1;
-		if (ref1->root > ref2->root)
+		if (ref1->node.ref_root > ref2->node.ref_root)
 			return 1;
-		if (ref1->objectid < ref2->objectid)
+		if (ref1->node.data_ref.objectid < ref2->node.data_ref.objectid)
 			return -1;
-		if (ref1->objectid > ref2->objectid)
+		if (ref1->node.data_ref.objectid > ref2->node.data_ref.objectid)
 			return 1;
-		if (ref1->offset < ref2->offset)
+		if (ref1->node.data_ref.offset < ref2->node.data_ref.offset)
 			return -1;
-		if (ref1->offset > ref2->offset)
+		if (ref1->node.data_ref.offset > ref2->node.data_ref.offset)
 			return 1;
 	} else {
-		if (ref1->parent < ref2->parent)
+		if (ref1->node.parent < ref2->node.parent)
 			return -1;
-		if (ref1->parent > ref2->parent)
+		if (ref1->node.parent > ref2->node.parent)
 			return 1;
 	}
 	return 0;
@@ -959,9 +961,10 @@ int btrfs_add_delayed_tree_ref(struct btrfs_trans_handle *trans,
 	init_delayed_ref_common(fs_info, &ref->node, bytenr, num_bytes,
 				generic_ref->tree_ref.owning_root, action,
 				ref_type);
-	ref->root = generic_ref->tree_ref.owning_root;
-	ref->parent = parent;
-	ref->level = level;
+	/* Kernel RHEL10-6.12: Fields moved to base node structure */
+	ref->node.ref_root = generic_ref->tree_ref.owning_root;
+	ref->node.parent = parent;
+	ref->node.tree_ref.level = level;
 
 	init_delayed_ref_head(head_ref, record, bytenr, num_bytes,
 			      generic_ref->tree_ref.owning_root, 0, action,
@@ -987,9 +990,8 @@ int btrfs_add_delayed_tree_ref(struct btrfs_trans_handle *trans,
 	 */
 	btrfs_update_delayed_refs_rsv(trans);
 
-	trace_add_delayed_tree_ref(fs_info, &ref->node, ref,
-				   action == BTRFS_ADD_DELAYED_EXTENT ?
-				   BTRFS_ADD_DELAYED_REF : action);
+	/* Kernel RHEL10-6.12: Trace function signature changed */
+	trace_add_delayed_tree_ref(fs_info, &ref->node);
 	if (ret > 0)
 		kmem_cache_free(btrfs_delayed_tree_ref_cachep, ref);
 
@@ -1033,10 +1035,11 @@ int btrfs_add_delayed_data_ref(struct btrfs_trans_handle *trans,
 	        ref_type = BTRFS_EXTENT_DATA_REF_KEY;
 	init_delayed_ref_common(fs_info, &ref->node, bytenr, num_bytes,
 				ref_root, action, ref_type);
-	ref->root = ref_root;
-	ref->parent = parent;
-	ref->objectid = owner;
-	ref->offset = offset;
+	/* Kernel RHEL10-6.12: Fields moved to base node structure */
+	ref->node.ref_root = ref_root;
+	ref->node.parent = parent;
+	ref->node.data_ref.objectid = owner;
+	ref->node.data_ref.offset = offset;
 
 
 	head_ref = kmem_cache_alloc(btrfs_delayed_ref_head_cachep, GFP_NOFS);
@@ -1079,9 +1082,8 @@ int btrfs_add_delayed_data_ref(struct btrfs_trans_handle *trans,
 	 */
 	btrfs_update_delayed_refs_rsv(trans);
 
-	trace_add_delayed_data_ref(trans->fs_info, &ref->node, ref,
-				   action == BTRFS_ADD_DELAYED_EXTENT ?
-				   BTRFS_ADD_DELAYED_REF : action);
+	/* Kernel RHEL10-6.12: Trace function signature changed */
+	trace_add_delayed_data_ref(trans->fs_info, &ref->node);
 	if (ret > 0)
 		kmem_cache_free(btrfs_delayed_data_ref_cachep, ref);
 
@@ -1172,7 +1174,8 @@ int __init btrfs_delayed_ref_init(void)
 	btrfs_delayed_extent_op_cachep = kmem_cache_create(
 				"btrfs_delayed_extent_op",
 				sizeof(struct btrfs_delayed_extent_op), 0,
-				SLAB_MEM_SPREAD, NULL);
+				0, /* SLAB_MEM_SPREAD removed in kernel RHEL10-6.12 */
+				NULL);
 	if (!btrfs_delayed_extent_op_cachep)
 		goto fail;
 
