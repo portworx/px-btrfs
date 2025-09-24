@@ -990,7 +990,11 @@ static int rbio_add_io_page(struct btrfs_raid_bio *rbio,
 	bio_set_dev(bio, stripe->dev->bdev);
 	bio->bi_iter.bi_sector = disk_start >> 9;
 
-	bio_add_page(bio, page, PAGE_SIZE, 0);
+	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
+		/* Failed to add page to bio */
+		bio_put(bio);
+		return -EIO;
+	}
 	bio_list_add(bio_list, bio);
 	return 0;
 }

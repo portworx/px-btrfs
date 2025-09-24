@@ -2431,7 +2431,13 @@ static int repair_io_failure(struct btrfs_fs_info *fs_info, u64 ino, u64 start,
 	}
 	bio_set_dev(bio, dev->bdev);
 	bio->bi_opf = REQ_OP_WRITE | REQ_SYNC;
-	bio_add_page(bio, page, length, pg_offset);
+	if (bio_add_page(bio, page, length, pg_offset) < length) {
+		/* Failed to add page to bio */
+		btrfs_bio_counter_dec(fs_info);
+		bio_put(bio);
+		btrfs_dev_stat_inc_and_print(dev, BTRFS_DEV_STAT_WRITE_ERRS);
+		return -EIO;
+	}
 
 	if (btrfsic_submit_bio_wait(bio)) {
 		/* try to remap that extent elsewhere? */
@@ -2739,7 +2745,12 @@ int btrfs_repair_one_sector(struct inode *inode,
 		       failed_bbio->csum + csum_size * icsum, csum_size);
 	}
 
-	bio_add_page(repair_bio, page, failrec->len, pgoff);
+	if (bio_add_page(repair_bio, page, failrec->len, pgoff) < failrec->len) {
+		/* Failed to add page to repair bio */
+		btrfs_bio_counter_dec(fs_info);
+		bio_put(repair_bio);
+		return -EIO;
+	}
 	repair_bbio->iter = repair_bio->bi_iter;
 
 	btrfs_debug(btrfs_sb(inode->i_sb),
