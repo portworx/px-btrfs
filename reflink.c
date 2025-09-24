@@ -22,8 +22,12 @@ static int clone_finish_inode_update(struct btrfs_trans_handle *trans,
 	int ret;
 
 	inode_inc_iversion(inode);
-	if (!no_time_update)
-		inode->i_mtime = inode->i_ctime = current_time(inode);
+	if (!no_time_update) {
+		/* Kernel RHEL10-6.12: Use new timestamp setter functions */
+		struct timespec64 now = current_time(inode);
+		inode_set_mtime_to_ts(inode, now);
+		inode_set_ctime_to_ts(inode, now);
+	}
 	/*
 	 * We round up to the block size at eof when determining which
 	 * extents to clone above, but shouldn't round up the file size.
