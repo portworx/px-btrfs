@@ -152,7 +152,7 @@ int __init btrfs_prelim_ref_init(void)
 	btrfs_prelim_ref_cache = kmem_cache_create("btrfs_prelim_ref",
 					sizeof(struct prelim_ref),
 					0,
-					SLAB_MEM_SPREAD,
+					0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
 					NULL);
 	if (!btrfs_prelim_ref_cache)
 		return -ENOMEM;
@@ -857,8 +857,9 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 			struct btrfs_delayed_tree_ref *ref;
 
 			ref = btrfs_delayed_node_to_tree_ref(node);
-			ret = add_indirect_ref(fs_info, preftrees, ref->root,
-					       &tmp_op_key, ref->level + 1,
+			/* Kernel RHEL10-6.12: Fields moved to base node structure */
+			ret = add_indirect_ref(fs_info, preftrees, ref->node.ref_root,
+					       &tmp_op_key, ref->node.tree_ref.level + 1,
 					       node->bytenr, count, sc,
 					       GFP_ATOMIC);
 			break;
@@ -869,8 +870,9 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 
 			ref = btrfs_delayed_node_to_tree_ref(node);
 
-			ret = add_direct_ref(fs_info, preftrees, ref->level + 1,
-					     ref->parent, node->bytenr, count,
+			/* Kernel RHEL10-6.12: Fields moved to base node structure */
+			ret = add_direct_ref(fs_info, preftrees, ref->node.tree_ref.level + 1,
+					     ref->node.parent, node->bytenr, count,
 					     sc, GFP_ATOMIC);
 			break;
 		}
@@ -879,20 +881,21 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 			struct btrfs_delayed_data_ref *ref;
 			ref = btrfs_delayed_node_to_data_ref(node);
 
-			key.objectid = ref->objectid;
+			/* Kernel RHEL10-6.12: Fields moved to base node structure */
+			key.objectid = ref->node.data_ref.objectid;
 			key.type = BTRFS_EXTENT_DATA_KEY;
-			key.offset = ref->offset;
+			key.offset = ref->node.data_ref.offset;
 
 			/*
 			 * Found a inum that doesn't match our known inum, we
 			 * know it's shared.
 			 */
-			if (sc && sc->inum && ref->objectid != sc->inum) {
+			if (sc && sc->inum && ref->node.data_ref.objectid != sc->inum) {
 				ret = BACKREF_FOUND_SHARED;
 				goto out;
 			}
 
-			ret = add_indirect_ref(fs_info, preftrees, ref->root,
+			ret = add_indirect_ref(fs_info, preftrees, ref->node.ref_root,
 					       &key, 0, node->bytenr, count, sc,
 					       GFP_ATOMIC);
 			break;
@@ -903,7 +906,8 @@ static int add_delayed_refs(const struct btrfs_fs_info *fs_info,
 
 			ref = btrfs_delayed_node_to_data_ref(node);
 
-			ret = add_direct_ref(fs_info, preftrees, 0, ref->parent,
+			/* Kernel RHEL10-6.12: Fields moved to base node structure */
+			ret = add_direct_ref(fs_info, preftrees, 0, ref->node.parent,
 					     node->bytenr, count, sc,
 					     GFP_ATOMIC);
 			break;

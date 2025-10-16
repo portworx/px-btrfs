@@ -708,7 +708,7 @@ static int btrfsic_process_superblock_dev_mirror(
 	int pass;
 	struct block_device *const superblock_bdev = device->bdev;
 	struct page *page;
-	struct address_space *mapping = superblock_bdev->bd_inode->i_mapping;
+	struct address_space *mapping = superblock_bdev->bd_mapping;
 	int ret = 0;
 
 	/* super block bytenr is always the unmapped device bytenr */

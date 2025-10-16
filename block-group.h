@@ -5,6 +5,9 @@
 
 #include "free-space-cache.h"
 
+/* Forward declaration for size class enum */
+enum btrfs_block_group_size_class;
+
 enum btrfs_disk_cache_state {
 	BTRFS_DC_WRITTEN,
 	BTRFS_DC_ERROR,
@@ -212,6 +215,9 @@ struct btrfs_block_group {
 	u64 meta_write_pointer;
 	struct map_lookup *physical_map;
 	struct list_head active_bg_list;
+
+	/* Size class for kernel 6.12 compatibility */
+	enum btrfs_block_group_size_class size_class;
 };
 
 static inline u64 btrfs_block_group_end(struct btrfs_block_group *block_group)

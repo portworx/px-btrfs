@@ -79,6 +79,20 @@ struct extent_io_tree {
 	spinlock_t lock;
 };
 
+/* Compatibility functions for kernel 6.12 trace events */
+static inline struct btrfs_fs_info *extent_io_tree_to_fs_info(const struct extent_io_tree *tree)
+{
+	return tree->fs_info;
+}
+
+static inline const struct btrfs_inode *extent_io_tree_to_inode_const(const struct extent_io_tree *tree)
+{
+	/* Return the inode from private_data if it's an inode tree, otherwise NULL */
+	if (tree->private_data)
+		return (const struct btrfs_inode *)tree->private_data;
+	return NULL;
+}
+
 struct extent_state {
 	u64 start;
 	u64 end; /* inclusive */

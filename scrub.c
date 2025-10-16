@@ -1422,7 +1422,11 @@ static void scrub_recheck_block_on_raid56(struct btrfs_fs_info *fs_info,
 		struct scrub_page *spage = sblock->pagev[page_num];
 
 		WARN_ON(!spage->page);
-		bio_add_page(bio, spage->page, PAGE_SIZE, 0);
+		if (bio_add_page(bio, spage->page, PAGE_SIZE, 0) < PAGE_SIZE) {
+			/* Failed to add page to bio */
+			bio_put(bio);
+			goto out;
+		}
 	}
 
 	if (scrub_submit_raid56_bio_wait(fs_info, bio, first_page)) {
@@ -1475,7 +1479,13 @@ static void scrub_recheck_block(struct btrfs_fs_info *fs_info,
 		bio = btrfs_bio_alloc(1);
 		bio_set_dev(bio, spage->dev->bdev);
 
-		bio_add_page(bio, spage->page, fs_info->sectorsize, 0);
+		if (bio_add_page(bio, spage->page, fs_info->sectorsize, 0) < fs_info->sectorsize) {
+			/* Failed to add page to bio */
+			bio_put(bio);
+			spage->io_error = 1;
+			sblock->no_io_error_seen = 0;
+			continue;
+		}
 		bio->bi_iter.bi_sector = spage->physical >> 9;
 		bio->bi_opf = REQ_OP_READ;
 

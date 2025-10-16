@@ -4984,11 +4984,13 @@ static int put_file_data(struct send_ctx *sctx, u64 offset, u32 len)
 			}
 		}
 
-		if (PageReadahead(page)) {
-			// Sebas : convert a page to folio since the page_cache_async_readahead
-			// expects a folio
-			page_cache_async_readahead(inode->i_mapping, &sctx->ra,
-				NULL, page_folio(page), index, last_index + 1 - index);
+		/* Kernel RHEL10-6.12: Convert to folio-based readahead API */
+		{
+			struct folio *folio = page_folio(page);
+			if (folio_test_readahead(folio)) {
+				page_cache_async_readahead(inode->i_mapping, &sctx->ra,
+					NULL, folio, last_index + 1 - index);
+			}
 		}
 
 		if (!PageUptodate(page)) {
@@ -7585,8 +7587,8 @@ long btrfs_ioctl_send(struct inode *inode, struct btrfs_ioctl_send_args *arg)
 	sctx->waiting_dir_moves = RB_ROOT;
 	sctx->orphan_dirs = RB_ROOT;
 
-	sctx->clone_roots = kvcalloc(sizeof(*sctx->clone_roots),
-				     arg->clone_sources_count + 1,
+	sctx->clone_roots = kvcalloc(arg->clone_sources_count + 1,
+				     sizeof(*sctx->clone_roots),
 				     GFP_KERNEL);
 	if (!sctx->clone_roots) {
 		ret = -ENOMEM;

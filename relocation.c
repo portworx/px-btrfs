@@ -2966,11 +2966,13 @@ static int relocate_one_page(struct inode *inode, struct file_ra_state *ra,
 	if (ret < 0)
 		goto release_page;
 
-	// Sebas: convert a page to a folio because page_cache_async_readahead
-	// expects a folio instead of a page
-	if (PageReadahead(page))
-		page_cache_async_readahead(inode->i_mapping, ra, NULL, page_folio(page),
-				   page_index, last_index + 1 - page_index);
+	/* Kernel RHEL10-6.12: Convert to folio-based readahead API */
+	{
+		struct folio *folio = page_folio(page);
+		if (folio_test_readahead(folio))
+			page_cache_async_readahead(inode->i_mapping, ra, NULL, folio,
+					   last_index + 1 - page_index);
+	}
 
 	if (!PageUptodate(page)) {
 		btrfs_readpage(NULL, page);

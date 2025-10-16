@@ -732,12 +732,13 @@ int btrfs_wait_ordered_range(struct inode *inode, u64 start, u64 len)
 	u64 orig_end;
 	struct btrfs_ordered_extent *ordered;
 
+	/* Kernel RHEL10-6.12: INT_LIMIT(loff_t) replaced with S64_MAX */
 	if (start + len < start) {
-		orig_end = INT_LIMIT(loff_t);
+		orig_end = S64_MAX;
 	} else {
 		orig_end = start + len - 1;
-		if (orig_end > INT_LIMIT(loff_t))
-			orig_end = INT_LIMIT(loff_t);
+		if (orig_end > S64_MAX)
+			orig_end = S64_MAX;
 	}
 
 	/* start IO across the range first to instantiate any delalloc
@@ -1091,7 +1092,7 @@ int __init ordered_data_init(void)
 {
 	btrfs_ordered_extent_cache = kmem_cache_create("btrfs_ordered_extent",
 				     sizeof(struct btrfs_ordered_extent), 0,
-				     SLAB_MEM_SPREAD,
+				     0, /* SLAB_MEM_SPREAD removed in kernel 6.12 */
 				     NULL);
 	if (!btrfs_ordered_extent_cache)
 		return -ENOMEM;

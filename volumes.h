@@ -11,6 +11,9 @@
 #include <linux/btrfs.h>
 #include "async-thread.h"
 
+/* Forward declaration */
+struct btrfs_transaction;
+
 #define BTRFS_MAX_DATA_CHUNK_SIZE	(10ULL * SZ_1G)
 
 extern struct mutex uuid_mutex;
@@ -407,6 +410,10 @@ struct btrfs_io_context {
 	 * so raid_map[0] is the start of our full stripe
 	 */
 	u64 *raid_map;
+
+	/* For kernel 6.12 trace events compatibility */
+	u64 full_stripe_logical;
+
 	struct btrfs_io_stripe stripes[];
 };
 
@@ -415,6 +422,20 @@ struct btrfs_device_info {
 	u64 dev_offset;
 	u64 max_avail;
 	u64 total_avail;
+};
+
+/* RAID types for btrfs_raid_array indexing */
+enum btrfs_raid_types {
+	BTRFS_RAID_RAID10,
+	BTRFS_RAID_RAID1,
+	BTRFS_RAID_RAID1C3,
+	BTRFS_RAID_RAID1C4,
+	BTRFS_RAID_DUP,
+	BTRFS_RAID_RAID0,
+	BTRFS_RAID_SINGLE,
+	BTRFS_RAID_RAID5,
+	BTRFS_RAID_RAID6,
+	BTRFS_NR_RAID_TYPES,
 };
 
 struct btrfs_raid_attr {
@@ -435,6 +456,18 @@ struct btrfs_raid_attr {
 extern const struct btrfs_raid_attr btrfs_raid_array[BTRFS_NR_RAID_TYPES];
 
 struct map_lookup {
+	u64 type;
+	int io_align;
+	int io_width;
+	u64 stripe_len;
+	int num_stripes;
+	int sub_stripes;
+	int verified_stripes; /* For mount time dev extent verification */
+	struct btrfs_io_stripe stripes[];
+};
+
+/* Compatibility struct for kernel 6.12 trace events */
+struct btrfs_chunk_map {
 	u64 type;
 	int io_align;
 	int io_width;
