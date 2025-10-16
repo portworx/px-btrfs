@@ -19,7 +19,7 @@ subdir-ccflags-y += -Wno-sign-compare
 subdir-ccflags-y += -Wno-type-limits
 subdir-ccflags-y += -Wno-shift-negative-value
 
-obj-$(CONFIG_BTRFS_FS) := btrfs.o
+obj-m:= btrfs.o
 
 btrfs-y += super.o ctree.o extent-tree.o print-tree.o root-tree.o dir-item.o \
 	   file-item.o inode-item.o disk-io.o \
