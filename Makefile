@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0
 
+# Define CONFIG for C preprocessor
+subdir-ccflags-y += -DCONFIG_BTRFS_FS_POSIX_ACL
+
 # Subset of W=1 warnings
 subdir-ccflags-y += -Wextra -Wunused -Wno-unused-parameter
 subdir-ccflags-y += -Wmissing-declarations
@@ -19,7 +22,7 @@ subdir-ccflags-y += -Wno-sign-compare
 subdir-ccflags-y += -Wno-type-limits
 subdir-ccflags-y += -Wno-shift-negative-value
 
-obj-$(CONFIG_BTRFS_FS) := btrfs.o
+obj-m := btrfs.o
 
 btrfs-y += super.o ctree.o extent-tree.o print-tree.o root-tree.o dir-item.o \
 	   file-item.o inode-item.o disk-io.o \
@@ -33,10 +36,10 @@ btrfs-y += super.o ctree.o extent-tree.o print-tree.o root-tree.o dir-item.o \
 	   block-rsv.o delalloc-space.o block-group.o discard.o reflink.o \
 	   subpage.o tree-mod-log.o
 
-btrfs-$(CONFIG_BTRFS_FS_POSIX_ACL) += acl.o
+btrfs-y += acl.o
 btrfs-$(CONFIG_BTRFS_FS_CHECK_INTEGRITY) += check-integrity.o
 btrfs-$(CONFIG_BTRFS_FS_REF_VERIFY) += ref-verify.o
-btrfs-$(CONFIG_BLK_DEV_ZONED) += zoned.o
+btrfs-y += zoned.o
 btrfs-$(CONFIG_FS_VERITY) += verity.o
 
 btrfs-$(CONFIG_BTRFS_FS_RUN_SANITY_TESTS) += tests/free-space-tests.o \

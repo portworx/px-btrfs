@@ -3716,8 +3716,8 @@ static int btrfs_file_open(struct inode *inode, struct file *filp)
 	int ret;
 
 	//JAR filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC;
-	filp->f_mode |= FMODE_NOWAIT | FMODE_BUF_RASYNC | FMODE_BUF_WASYNC |
-		        FMODE_CAN_ODIRECT;
+	// FMODE_BUF_RASYNC and FMODE_BUF_WASYNC not available in RHEL 9.7 kernel 5.14
+	filp->f_mode |= FMODE_NOWAIT | FMODE_CAN_ODIRECT;
 
 	ret = fsverity_file_open(inode, filp);
 	if (ret)

@@ -578,12 +578,11 @@ blk_status_t btrfs_submit_compressed_write(struct btrfs_inode *inode, u64 start,
 		real_size = min_t(u64, real_size, compressed_len - offset);
 		ASSERT(IS_ALIGNED(real_size, fs_info->sectorsize));
 
-		if (use_append)
-			added = bio_add_zone_append_page(bio, page, real_size,
-					offset_in_page(offset));
-		else
-			added = bio_add_page(bio, page, real_size,
-					offset_in_page(offset));
+		// bio_add_zone_append_page not available in RHEL 9.7 kernel 5.14
+		// Use bio_add_page for both regular and zone append operations
+		// The zone append logic is handled at a different layer in this kernel version
+		added = bio_add_page(bio, page, real_size,
+				offset_in_page(offset));
 		/* Reached zoned boundary */
 		if (added == 0)
 			submit = true;
