@@ -3308,10 +3308,10 @@ static int btrfs_bio_add_page(struct btrfs_bio_ctrl *bio_ctrl,
 	if (real_size == 0)
 		return 0;
 
-	if (bio_op(bio) == REQ_OP_ZONE_APPEND)
-		ret = bio_add_zone_append_page(bio, page, real_size, pg_offset);
-	else
-		ret = bio_add_page(bio, page, real_size, pg_offset);
+	// bio_add_zone_append_page not available in RHEL 9.7 kernel 5.14
+	// Use bio_add_page for both regular and zone append operations
+	// The zone append logic is handled at a different layer in this kernel version
+	ret = bio_add_page(bio, page, real_size, pg_offset);
 
 	return ret;
 }

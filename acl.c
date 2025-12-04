@@ -16,15 +16,15 @@
 #include "btrfs_inode.h"
 #include "xattr.h"
 
-struct posix_acl *btrfs_get_acl(struct inode *inode, int type, bool rcu)
+#ifdef CONFIG_BTRFS_FS_POSIX_ACL
+
+struct posix_acl *btrfs_get_acl(struct mnt_idmap *idmap, struct dentry *dentry, int type)
 {
 	int size;
 	const char *name;
 	char *value = NULL;
 	struct posix_acl *acl;
-
-	if (rcu)
-		return ERR_PTR(-ECHILD);
+	struct inode *inode = d_inode(dentry);
 
 	switch (type) {
 	case ACL_TYPE_ACCESS:
@@ -111,19 +111,20 @@ out:
 	return ret;
 }
 
-int btrfs_set_acl(struct user_namespace *mnt_userns, struct inode *inode,
+int btrfs_set_acl(struct mnt_idmap *idmap, struct dentry *dentry,
 		  struct posix_acl *acl, int type)
 {
 	int ret;
+	struct inode *inode = d_inode(dentry);
 	umode_t old_mode = inode->i_mode;
 
 	if (type == ACL_TYPE_ACCESS && acl) {
-		ret = posix_acl_update_mode(mnt_userns, inode,
+		ret = posix_acl_update_mode(idmap, inode,
 					    &inode->i_mode, &acl);
 		if (ret)
 			return ret;
 	}
-	ret = __btrfs_set_acl(NULL, mnt_userns, inode, acl, type);
+	ret = __btrfs_set_acl(NULL, &init_user_ns, inode, acl, type);
 	if (ret)
 		inode->i_mode = old_mode;
 	return ret;
@@ -160,3 +161,5 @@ int btrfs_init_acl(struct btrfs_trans_handle *trans,
 		cache_no_acl(inode);
 	return ret;
 }
+
+#endif /* CONFIG_BTRFS_FS_POSIX_ACL */
