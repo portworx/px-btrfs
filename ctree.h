@@ -3884,9 +3884,10 @@ static inline bool btrfs_is_data_reloc_root(const struct btrfs_root *root)
  *
  * Rename the Private2 accessors to Ordered, to improve readability.
  */
-#define PageOrdered(page)		PagePrivate2(page)
-#define SetPageOrdered(page)		SetPagePrivate2(page)
-#define ClearPageOrdered(page)		ClearPagePrivate2(page)
+/* RHEL 10.1 kernel 6.12: Use folio-based API for Private2 flag */
+#define PageOrdered(page)		folio_test_private_2(page_folio(page))
+#define SetPageOrdered(page)		folio_set_private_2(page_folio(page))
+#define ClearPageOrdered(page)		folio_clear_private_2(page_folio(page))
 #define folio_test_ordered(folio)	folio_test_private_2(folio)
 #define folio_set_ordered(folio)	folio_set_private_2(folio)
 #define folio_clear_ordered(folio)	folio_clear_private_2(folio)
