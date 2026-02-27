@@ -3321,10 +3321,8 @@ static int btrfs_bio_add_page(struct btrfs_bio_ctrl *bio_ctrl,
 	if (real_size == 0)
 		return 0;
 
-	if (bio_op(bio) == REQ_OP_ZONE_APPEND)
-		ret = bio_add_zone_append_page(bio, page, real_size, pg_offset);
-	else
-		ret = bio_add_page(bio, page, real_size, pg_offset);
+	/* Kernel 6.12: bio_add_zone_append_page was removed, use bio_add_page for all ops */
+	ret = bio_add_page(bio, page, real_size, pg_offset);
 
 	return ret;
 }
